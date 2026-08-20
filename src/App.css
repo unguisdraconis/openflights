@@ -77,12 +77,12 @@
 * {
   box-sizing: border-box;
 }
-/* Transitions and theme swaps do not mix. A transitioned property whose value
-   comes from a custom property does not re-target when that property changes,
-   so a control keeps the previous theme's colour indefinitely — which reads
-   as a contrast failure rather than a stuck animation. Suppress transitions
-   for the frame in which the theme is exchanged; an instant swap is the right
-   behaviour for a theme change anyway. */
+/* Suppress transitions for the frame in which the theme is exchanged, so the
+   whole interface swaps at once instead of cross-fading property by property.
+   Note this is a polish measure, not a correctness one: it does NOT rescue a
+   property that is itself transitioned and reads its value from a theme
+   custom property — those freeze at the old value regardless, which is why
+   the controls below transition `transform` only. */
 :root[data-theme-switching] *,
 :root[data-theme-switching] *::before,
 :root[data-theme-switching] *::after {
@@ -205,18 +205,17 @@ h1 {
 .clear-btn {
   border: 1px solid var(--border);
   background: var(--bg-elevated);
-  /* Resolve the colour explicitly rather than inheriting it. These controls
-     transition `color`, and a transitioned property that inherits its value
-     does not re-target when the theme swaps — the button stays on the old
-     theme's text colour indefinitely, which reads as a contrast failure. */
   color: var(--text);
   border-radius: 9px;
   cursor: pointer;
-  transition:
-    border-color 0.15s,
-    background 0.15s,
-    color 0.15s,
-    transform 0.15s;
+  /* Only `transform` is transitioned. The colour properties here resolve from
+     custom properties, and a transition on such a property pins the value it
+     had when the transition was declared: swapping the theme leaves the
+     control showing the previous theme's colours indefinitely, which reads as
+     a contrast failure rather than an animation glitch. Verified directly —
+     setting `transition: none` on a stuck button snaps it to the correct
+     colour immediately. Hover feedback is instant, which is no loss. */
+  transition: transform 0.15s;
 }
 .icon-btn:hover,
 .seg-btn:hover,
@@ -484,10 +483,8 @@ kbd {
   font-size: 11px;
   text-decoration: none;
   cursor: pointer;
-  transition:
-    border-color 0.15s,
-    background 0.15s,
-    color 0.15s;
+  /* Same hazard as the button group above: transitioning colours that come
+     from theme custom properties freezes them at their old values. */
 }
 .social-btn:hover {
   border-color: var(--accent-border);

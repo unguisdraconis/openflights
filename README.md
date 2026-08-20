@@ -26,6 +26,22 @@ npm run build
 npm run preview
 ```
 
+## Deploy to GitHub Pages
+
+The repository includes a GitHub Actions workflow at `.github/workflows/deploy.yml`.
+After pushing the repository to `openflights` on GitHub:
+
+1. In the repository, open **Settings > Pages**.
+2. Set **Source** to **GitHub Actions**.
+3. Push to `master` or run the **Deploy to GitHub Pages** workflow manually.
+
+If no Git remote is configured yet, add the repository URL and push the branch:
+
+```bash
+git remote add origin https://github.com/<your-username>/openflights.git
+git push -u origin master
+```
+
 The OpenFlights assets are served from:
 
 - `public/airports.dat`
