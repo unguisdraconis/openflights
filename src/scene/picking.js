@@ -150,7 +150,9 @@ export function createPicking({
     hide(world.starsObj);
     hide(world.grid);
     hide(world.atmosphere);
-    hide(routes.object);
+    // Routes are drawn as two objects (context and focus); hiding only one
+    // would leave the other writing colour into the pick buffer.
+    routes.objects.forEach(hide);
     swapMaterial(world.globe, occluderMaterial);
     swapMaterial(sprites.points, pickMaterial);
     if (heroIndex >= 0) {

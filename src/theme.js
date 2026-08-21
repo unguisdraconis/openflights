@@ -37,6 +37,11 @@ export const THEMES = {
     // light background it would wash out to white, so light mode differs.
     routeBlending: THREE.AdditiveBlending,
     routeOpacity: { globe: 0.29, topology: 0.2 },
+    // With a selection active the unrelated routes drop back to context and
+    // the selected airport's own routes come forward. Colour alone cannot do
+    // this: one route tinted differently is invisible among ~19,000 others.
+    routeContextOpacity: { globe: 0.08, topology: 0.07 },
+    routeFocusOpacity: 0.95,
     globe: {
       color: 0x101a26,
       emissive: 0x07101a,
@@ -66,6 +71,8 @@ export const THEMES = {
     // lines drawn on a map rather than light emitted against space.
     routeBlending: THREE.NormalBlending,
     routeOpacity: { globe: 0.26, topology: 0.22 },
+    routeContextOpacity: { globe: 0.09, topology: 0.08 },
+    routeFocusOpacity: 0.9,
     globe: {
       color: 0xdfe6ec,
       emissive: 0x000000,
