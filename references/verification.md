@@ -56,6 +56,14 @@ Each of these has produced a convincing false conclusion:
 the same tick shows the *previous* state. The scene looks unchanged and you
 conclude the wiring is broken. Measure in a later call.
 
+**Synthetic events are not native events.** Dispatching `mouseenter` on an
+element with a React `onMouseEnter` handler does nothing: React implements it
+over delegated `mouseover`/`mouseout`. Dispatch `mouseover` with `bubbles: true`
+and a `relatedTarget`, or better, drive hover and focus from CSS so there is no
+synthetic layer to simulate at all. If a handler "does not fire" under test,
+check whether you are sending the event React actually listens for before
+concluding the wiring is broken.
+
 **rAF and observers may not run.** In a hidden or non-compositing page,
 `requestAnimationFrame` is paused, so the render loop never advances,
 `renderer.info.render.frame` stays 0, and anything scheduled on a frame — a
@@ -68,6 +76,17 @@ problem, not the code.
 
 This also argues for a design choice: for a layout change the app makes itself,
 call `resize()` directly from an effect rather than waiting on an observer.
+
+`requestIdleCallback` is the same story and worse, because work scheduled on it
+simply never advances in a hidden page — a background computation appears to
+hang. Check `document.visibilityState` before concluding the code is stuck, and
+if you need to verify the completion path, temporarily force the `setTimeout`
+fallback instead.
+
+**Timers are throttled in background tabs.** A hidden page clamps `setInterval`
+to roughly once per second, so using timer ticks to probe main-thread
+responsiveness reports catastrophic contention that does not exist. Measure
+responsiveness only in a foreground page, or measure the work directly.
 
 **A dev server can serve a stale module.** Watchers occasionally miss a file,
 and the browser then runs code that does not match disk — producing errors that

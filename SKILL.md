@@ -81,6 +81,33 @@ Resist turning these into React components (the react-three-fiber shape). That
 puts the scene back under the reconciler and forfeits the main benefit of the
 architecture. Factories give you file boundaries without reconciliation.
 
+### Hover and focus belong in CSS, not React state
+
+React's event system is delegated and synthetic, and it does not behave the way
+the prop names suggest. `onMouseEnter` is implemented over delegated
+`mouseover`/`mouseout` with `relatedTarget` logic, so a dispatched native
+`mouseenter` never reaches it — which makes such handlers awkward to drive from
+a test as well as easy to get subtly wrong in use.
+
+For anything that opens on hover or focus, express it in CSS and keep React for
+state that genuinely persists:
+
+```css
+.title-wrap:hover .popover,
+.title-wrap:focus-within .popover,
+.popover[data-open="true"] { visibility: visible; opacity: 1; }
+```
+
+`:focus-within` covers keyboard users for free, scoping to a wrapper keeps the
+popover open while the pointer travels onto it to read, and the whole thing
+applies synchronously with no re-render. Leave React holding only the pinned
+state a click toggles.
+
+The same asynchrony bites when reading back: React state updates do not apply
+in the tick you triggered them, so a click followed immediately by a read of
+the DOM or the scene shows the *previous* value. That is a measurement
+artifact, not a bug in the wiring — verify in a later tick.
+
 ### Keep render state off your domain objects
 
 It is tempting to write `node.geo = vector3` and `node.topology = vector3` onto
@@ -162,6 +189,20 @@ to a cap (~85 ticks). A `forceSimulation` starts itself on construction via
 competing for the frame budget. On convergence, rescale extents into a fixed box
 with `d3.scaleLinear` and add a small z-offset from `log1p(degree)` so hubs sit
 forward.
+
+Know what this costs before tuning anything else: on a 3,265-node /
+18,972-link graph the simulation is **~5.4s of main-thread work, ~63ms per
+tick** — roughly seventy times the cost of loading the data it runs on. Note
+also that idle chunking does not save you when a single tick exceeds an idle
+slice (~50ms): every tick overruns, so the "yield politely" design degrades
+into sustained contention with the render loop.
+
+Deferring it until the topology view is opened is the obvious fix and is
+usually the wrong one. The work costs the same either way; running it eagerly
+spends it while the user is busy with the default view, while deferring spends
+it exactly when they are waiting for the thing they just asked for. Move a cost
+only if you are moving it somewhere nobody is waiting — otherwise make it
+cheaper (a worker, fewer ticks, a link subset) or leave it where it is.
 
 ## The scene: batch everything into as few draw calls as possible
 
@@ -350,6 +391,13 @@ instrument.
 
 ## Performance patterns (apply throughout)
 
+**Profile the whole startup before optimising the obvious suspect.** In this
+project the suspected culprit was the 3.4 MB of data being fetched; measured,
+it was 79ms — **1.4%** of startup — while the force layout nobody suspected was
+5,376ms. Time every phase (fetch, parse, geometry build, layout, texture
+decode) and let the numbers pick the target. A plausible story about which part
+is slow is worth nothing against a measurement.
+
 - Clamp `renderer.setPixelRatio(Math.min(devicePixelRatio, 1.75))` up front.
 - **Adaptive quality:** sample recent frame deltas; if the rolling mean exceeds
   ~24ms while pixel ratio is still >1, drop it to 1 and resize.
@@ -374,6 +422,13 @@ instrument.
   `<input>` is focused.
 - Toggles use `aria-pressed` / `aria-expanded` (plus `aria-controls` when they
   govern a region); every slider and select has a label.
+- **Choose disclosure over tooltip for anything meant to be read.** A tooltip
+  suits a short label; content of a sentence or more needs a `<button
+  aria-expanded aria-controls>` and a panel that stays open, with `hidden` on
+  the panel so it leaves the tab order and the accessibility tree when closed.
+  Put explanatory content where users already look for it — provenance next to
+  the attribution, not attached to a page title, which nobody expects to be
+  interactive.
 - **Announce loading states.** During startup lead with what is happening in a
   `role="status" aria-live="polite"` region rather than showing file-picker
   instructions, which read as an error when nothing is wrong. Mark a progress
@@ -420,3 +475,7 @@ instrument.
 - Collapsing a grid column to `0` while `display: none` removes the item (the
   canvas lands in the empty track and gets no width).
 - Trusting a `ResizeObserver` for a layout change you made yourself.
+- Driving hover or focus UI from React state instead of CSS `:hover` /
+  `:focus-within` (see below — the synthetic events do not behave as they look).
+- Deferring expensive work to a moment when the user is waiting for it.
+- Assuming the biggest asset is the slowest part of startup.
