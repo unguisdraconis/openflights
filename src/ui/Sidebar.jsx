@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { fmt } from "../constants.js";
 import { LinkedInIcon, GitHubIcon } from "./icons.jsx";
 
@@ -23,6 +23,7 @@ export function Sidebar({
       .sort((a, b) => b.degree - a.degree)
       .slice(0, 8);
   }, [data, query]);
+  const [aboutOpen, setAboutOpen] = useState(false);
   return (
     <aside
       id="controls"
@@ -268,6 +269,35 @@ export function Sidebar({
             OpenFlights.org
           </a>
         </p>
+        {/* Provenance and its caveats belong together, and this is where people
+            look for "where did this come from". A disclosure rather than a
+            tooltip, because the text is meant to be read, not glimpsed. */}
+        <button
+          type="button"
+          className="about-toggle"
+          aria-expanded={aboutOpen}
+          aria-controls="about-data-panel"
+          onClick={() => setAboutOpen((v) => !v)}
+        >
+          {aboutOpen ? "▾" : "▸"} About this data
+        </button>
+        <div id="about-data-panel" className="about-panel" hidden={!aboutOpen}>
+          <p>
+            <b>~7,700 airports</b> with IATA/ICAO codes, coordinates and
+            timezones. About 3,300 carry routes, forming the ~19,000
+            connections drawn here.
+          </p>
+          <p>
+            Useful as reference data, and as a real-world scale-free network
+            for graph analysis and visualisation.
+          </p>
+          <p>
+            <b>A historical snapshot, not a live feed.</b> Airports are current
+            to roughly 2017, with the last upstream correction in 2019. There
+            are no schedules, frequencies or fares, so it cannot tell you what
+            flies today.
+          </p>
+        </div>
       </footer>
     </aside>
   );
