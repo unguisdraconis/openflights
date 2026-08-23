@@ -3,32 +3,50 @@ name: webgl-globe-network
 description: >-
   Build high-performance interactive 3D globe and network-graph
   visualizations with React, Three.js (WebGL), and D3, including light/dark
-  theming, hypsometric terrain, country borders, and correct colour
-  management in custom shaders. Use when the task involves rendering
-  thousands of geographic points or graph nodes on a canvas, drawing
-  great-circle arc "flight paths" on a globe, a force-directed topology view,
-  hover/click picking over many points, adding a light or dark mode to a
-  WebGL scene, shading a globe from elevation data, or wiring an imperative
-  Three.js scene into a React component without fighting the render loop.
-  Use it as well whenever colours come out darker or more saturated than the
-  palette says, when a light background makes glowing additive lines wash
-  out, or when a map's coastlines, mountains, or water bodies need to be
-  drawn from real data. Triggers: "globe", "3D map", "flight network",
+  theming, hypsometric terrain, country borders, correct colour management in
+  custom shaders, and accessible contrast in both themes. Use when the task
+  involves rendering thousands of geographic points or graph nodes on a
+  canvas, drawing great-circle arc "flight paths" on a globe, a force-directed
+  topology view, hover/click picking over many points, adding a light or dark
+  mode to a WebGL scene, shading a globe from elevation data, making a
+  selected item stand out in a dense field, or wiring an imperative Three.js
+  scene into a React component without fighting the render loop. Use it as
+  well whenever colours come out darker than the palette says, when a light
+  background makes glowing additive lines wash out, when a theme toggle leaves
+  controls showing the previous theme's colours, when a WAVE or WCAG contrast
+  check fails after adding a theme, when a canvas must resize as surrounding
+  chrome collapses, or when a dataset has to be fetched from an upstream
+  source with a local fallback. Triggers: "globe", "3D map", "flight network",
   "network graph in three.js", "point cloud", "great-circle arcs",
   "force-directed layout", "instanced/points rendering", "canvas
   visualization performance", "d3 quadtree picking", "GPU picking", "webgl in
   react", "dark mode", "light mode", "theme toggle", "hypsometric",
   "topography", "terrain shader", "hillshade", "country borders", "TopoJSON",
-  "colour space", "sRGB", "washed out colours".
+  "colour space", "sRGB", "washed out colours", "contrast", "WCAG", "WAVE",
+  "collapse sidebar", "highlight selection".
 ---
 
 # WebGL Globe & Network Visualization
 
-A field guide for building an interactive 3D globe / force-directed network
-on a WebGL canvas driven by React, Three.js, and D3. It encodes the specific
-patterns that keep such an app fast, accessible, and maintainable. Follow the
-architecture below rather than reinventing it — most of these choices exist to
-avoid a specific performance or correctness trap.
+A field guide for building an interactive 3D globe / force-directed network on
+a WebGL canvas driven by React, Three.js, and D3. It encodes the patterns that
+keep such an app fast, accessible and maintainable. Follow the architecture
+below rather than reinventing it — most of these choices exist to avoid a
+specific trap, and several of them are things that look right in the source and
+are wrong on screen.
+
+## Reference files
+
+This file carries the architecture and the traps worth knowing before you write
+anything. Four companions hold the depth; read the relevant one when you reach
+that work rather than up front.
+
+| File | Read it when |
+|---|---|
+| `references/picking.md` | Implementing or debugging hover/click over a Points batch; choosing CPU quadtree vs GPU picking; "the tooltip fires on things I can't see" |
+| `references/theming-and-contrast.md` | Adding light/dark mode; a theme toggle misbehaving; any WCAG/WAVE contrast failure |
+| `references/terrain-and-vectors.md` | Shading a globe from elevation data; drawing coastlines or borders; preparing raster/vector assets |
+| `references/verification.md` | You cannot see the canvas, or you are about to claim a rendering fix works |
 
 ## Core architectural rule: React owns state, Three.js owns the frame
 
@@ -40,14 +58,14 @@ into the scene; it must never re-render on animation ticks.
   parsed `data`, and tear it down completely in that effect's cleanup. The
   WebGL context is expensive — do not rebuild it when options or selection
   change.
-- Expose an imperative handle from the effect via a ref (e.g.
-  `apiRef.current = { update, focusNode, resetCamera }`). Secondary effects
-  keyed on `[options, selected, ...]` call `apiRef.current.update(...)` to push
-  new state into the scene. This is the bridge between declarative React and
+- Expose an imperative handle via a ref (e.g.
+  `apiRef.current = { update, focusNode, resetCamera, resize }`). Secondary
+  effects keyed on `[options, selected, ...]` call `apiRef.current.update(...)`
+  to push new state in. This is the bridge between declarative React and
   imperative Three.js.
 - The `requestAnimationFrame` loop only reads mutable closure variables and
-  calls `controls.update()` + `renderer.render()`. It never touches React
-  state setters.
+  calls `controls.update()` + `renderer.render()`. It never touches React state
+  setters.
 - Read the latest selection inside event handlers through a
   `selectedRef.current = selected` mirror ref, so listeners registered once at
   setup always see current state without re-registering.
@@ -59,48 +77,68 @@ imperative factories — `createGlobe(scene, palette)`, `createNodeSprites(...)`
 `createRouteLines(...)`, `createPicking({...})` — each returning the objects it
 owns plus `update` and `dispose`. The effect becomes a short composition root.
 
-Resist the urge to turn these into React components (the react-three-fiber
-shape). Doing so puts the scene back under the reconciler and forfeits the main
-benefit of the architecture. Factories give you the file boundaries without the
-reconciliation cost.
+Resist turning these into React components (the react-three-fiber shape). That
+puts the scene back under the reconciler and forfeits the main benefit of the
+architecture. Factories give you file boundaries without reconciliation.
 
 ### Keep render state off your domain objects
 
-It is tempting to write `node.geo = vector3` and `node.topology = vector3`
-directly onto parsed entities. Prefer index-aligned typed arrays held beside
-the graph:
+It is tempting to write `node.geo = vector3` and `node.topology = vector3` onto
+parsed entities. Prefer index-aligned typed arrays beside the graph:
 
 ```
 positions.geo      Float32Array(n * 3)   // built once
 positions.topology Float32Array(n * 3)   // filled by the layout
 ```
 
-This keeps ownership clear — the parser owns the domain objects, each renderer
-owns its own table — and it is measurably faster: switching views becomes one
+Ownership stays clear — the parser owns domain objects, each renderer owns its
+own table — and it is measurably faster: switching views becomes one
 `buffer.set(table)` memcpy instead of `n` separate `Vector3.toArray()` copies.
-Freezing the parsed entities in development (`Object.freeze`) turns any
-accidental write into an immediate throw rather than a slow drift.
+Freezing parsed entities in development (`Object.freeze`) turns an accidental
+write into an immediate throw rather than a slow drift.
 
 ## Data pipeline
 
 Parse raw CSV (OpenFlights `.dat` is headerless CSV) with `d3.csvParseRows`.
-Build the graph in a pure function that returns `{ nodes, links, countries }`:
+Build the graph in a pure function returning `{ nodes, links, countries }`:
 
 - Index entities two ways (numeric id **and** code) so cross-references resolve
   in O(1) regardless of which identifier a row uses.
 - Deduplicate edges into undirected links keyed by a **sorted** pair of ids;
-  accumulate a `weight` and any per-edge sets (carriers, etc.) on first
-  creation.
+  accumulate `weight` and per-edge sets on first creation.
 - Drop unusable rows early (missing coords, self-loops, unresolved endpoints).
-- Compute `degree` from the deduplicated neighbor sets, not the raw edge list.
-- **Exclude orphan nodes** (zero links) from the node array so the graph only
-  contains connected entities.
+- Compute `degree` from deduplicated neighbor sets, not the raw edge list.
+- **Exclude orphan nodes** so the graph only contains connected entities.
 - Score links (`weight*20 + sqrt(srcDeg*tgtDeg)`) and sort descending. A
-  density slider can then take a **prefix** of the sorted array to always keep
-  the most significant edges rather than a random subset.
+  density slider then takes a **prefix** of the sorted array, always keeping the
+  most significant edges rather than a random subset.
 
-Run parsing off the initial paint (wrap in `setTimeout(..., 30)` or a worker)
-and show a loader; parsing a large network blocks the main thread.
+Run parsing off the initial paint (`setTimeout(..., 30)` or a worker) and show a
+loader; parsing a large network blocks the main thread.
+
+### Sourcing the data
+
+Check whether the "API" you are reaching for exists. Many open datasets —
+OpenFlights among them — publish flat files in a repository and have no
+endpoint at all. Fetching those files *is* the integration.
+
+Prefer a fallback chain: bundled files first (same origin, fast, offline,
+deterministic), then upstream, then a drag-and-drop picker. Reading a static
+dataset over the network on every cold load buys little and puts a third party
+in your startup path.
+
+- **Pin an immutable ref, not a branch.** A CDN serves a pinned commit with
+  `immutable` and a year-long cache where a moving ref gets days, and the
+  dataset cannot change under the app without a code change.
+- **Reject HTML that arrives with a 200.** Dev servers and static hosts answer
+  a missing path with `index.html`. A naive `response.ok` check hands markup to
+  the CSV parser, which "succeeds" into an empty graph. Test the first bytes
+  for `<!doctype`/`<html>`.
+- **Abort in flight on cleanup.** Wire an `AbortController` to the effect
+  cleanup. React StrictMode invokes effects twice in development; without this
+  you download everything twice.
+- Report what was actually tried when every source fails; a bare loader cannot
+  distinguish a missing file from a blocked network.
 
 ## Layout math
 
@@ -111,21 +149,19 @@ theta = (lon + 180) * PI/180
 v = (-sin(phi)cos(theta), cos(phi), sin(phi)sin(theta)) * radius
 ```
 
-**Great-circle arcs.** Draw flight paths with spherical interpolation (slerp)
-between the two endpoint vectors, lifting the midpoint outward by a
-sine-shaped altitude (`1.012 + sin(PI*t) * altitude`). Scale segment count
-with arc length (e.g. 7 segments normally, 11 for arcs > ~1.25 rad) so long
-arcs stay smooth without over-tessellating short ones.
+**Great-circle arcs.** Interpolate spherically between endpoints, lifting the
+midpoint outward by a sine-shaped altitude (`1.012 + sin(PI*t) * altitude`).
+Scale segment count with arc length (7 normally, 11 for arcs > ~1.25 rad) so
+long arcs stay smooth without over-tessellating short ones.
 
 **Force-directed topology.** Use `d3-forceSimulation` with link + many-body +
-centering + weak x/y forces, but **do not** run it on d3's timer. Call
-`.stop()` and drive `simulation.tick()` manually inside `requestIdleCallback`
-batches, ticking as many times as fit in each idle slice up to a cap (~85).
-A `forceSimulation` starts itself on construction via `d3-timer`'s own rAF
-loop, so without that `.stop()` you get two animation loops competing for the
-frame budget. On convergence, rescale node extents into a fixed viewport box
-with `d3.scaleLinear`, and add a small z-offset from `log1p(degree)` so hubs
-sit forward.
+centering + weak x/y forces, but **do not** run it on d3's timer. Call `.stop()`
+and drive `simulation.tick()` manually inside `requestIdleCallback` batches, up
+to a cap (~85 ticks). A `forceSimulation` starts itself on construction via
+`d3-timer`'s own rAF loop, so without `.stop()` you get two animation loops
+competing for the frame budget. On convergence, rescale extents into a fixed box
+with `d3.scaleLinear` and add a small z-offset from `log1p(degree)` so hubs sit
+forward.
 
 ## The scene: batch everything into as few draw calls as possible
 
@@ -135,56 +171,79 @@ counts. **Never create one mesh per node.**
 - **All nodes = one `THREE.Points`** with a single `BufferGeometry` and custom
   shaders. Store per-node `position`, `color`, `aSize`, `aAlpha` as attribute
   buffers. On filter/selection change, mutate the typed arrays in place and set
-  `attribute.needsUpdate = true` — a few typed-array writes, not object churn.
+  `attribute.needsUpdate = true`.
   - Vertex shader: `gl_PointSize = clamp(aSize * (260.0/-mv.z), 2.0, 18.0)` for
-    free distance attenuation and min/max clamp.
+    free distance attenuation with min/max clamp.
   - Fragment shader: soft circular dot via `smoothstep(.5,.25,d)` on
     `gl_PointCoord`, `discard` near-transparent fragments. No texture needed.
-  - `transparent: true, depthWrite: false, vertexColors: true`.
-- **All edges = one `THREE.LineSegments`**, rebuilt into fresh position/color
-  buffers when filters/selection change. Pre-count total segments, allocate
-  `Float32Array(segments*2*3)` once, fill it, dispose the old geometry/material
-  before replacing.
-- Effects that don't need geometry (atmosphere rim light, fog) are cheap
-  `ShaderMaterial` shells or built-ins, not post-processing passes.
+- **All edges = one `THREE.LineSegments`**, rebuilt into fresh buffers when
+  filters change. Pre-count segments, allocate once, dispose the old
+  geometry/material before replacing.
+- Effects that need no geometry (atmosphere rim, fog) are cheap
+  `ShaderMaterial` shells, not post-processing passes.
 
 ### Solid bodies must be opaque
 
 A planet drawn with `transparent: true` (even at `opacity: 0.985`) joins the
 transparency queue, where it is sorted and blended against the node sprites
 instead of being laid down first as a depth-writing occluder. The symptom is
-disorienting: sprites vanish everywhere inside the globe's silhouette and
-survive only in the thin ring where they project past the limb, because that
-ring is the only place they aren't painted over.
+distinctive: sprites vanish everywhere inside the globe's silhouette and survive
+only in the thin ring where they project past the limb — the one place they are
+not painted over.
 
 If a body is meant to be solid, set `transparent: false` and delete any
-`opacity` beside it — opacity is ignored on an opaque material and will
-mislead the next reader.
+`opacity` beside it; opacity is ignored on an opaque material and misleads the
+next reader.
 
 ### Hybrid "hero" mesh (optional emphasis)
 
-A single node (the selection, or the top-degree hub as a default) can render
-as a real lit `SphereGeometry` + `MeshStandardMaterial` for premium shading and
-correct depth occlusion — it's **one** extra draw call, so cost is negligible.
-Hide that node's point sprite (set its alpha to 0) but keep its index in the
-pickable set so hover/click still resolve to it. Because a mesh has no
-`gl_PointSize` trick, convert the intended pixel size to a world radius by
-inverting the perspective projection at a reference camera distance, and
-recompute on resize. Do **not** promote many nodes to meshes — the whole point
-of the Points batch is to avoid thousands of draw calls.
+A single node (the selection, or the top-degree hub) can render as a real lit
+`SphereGeometry` + `MeshStandardMaterial` — **one** extra draw call, buying real
+lighting and depth occlusion. Hide that node's sprite (alpha 0) but keep its
+index pickable. A mesh has no `gl_PointSize` trick, so invert the perspective
+projection to convert the intended pixel size to a world radius, and recompute
+on resize.
+
+## Emphasis: focus and context
+
+Selecting something in a dense field is a rendering problem, not a colour
+choice. Tinting one route differently inside a single `LineSegments` of ~19,000
+arcs does almost nothing: it draws at the same opacity, interleaved among
+everything else, and under additive blending the pile-up of unrelated lines is
+brighter than any single line in it. **Line weight is not available** — WebGL
+ignores `linewidth` on essentially every platform — so opacity and draw order
+have to carry the emphasis.
+
+Split the marks into two objects:
+
+- **Context**: everything else, dropped to a much lower opacity *only while a
+  selection exists* (e.g. 0.29 → 0.08). Restore it when nothing is selected.
+- **Focus**: the selected item's marks, at high opacity (~0.95) and a higher
+  `renderOrder` so they draw on top.
+
+On a globe, give focused arcs a small extra midpoint lift so they ride clear of
+the tangle rather than z-fighting through it; endpoints stay anchored because
+altitude is shaped by `sin(pi*t)`.
+
+Measure the result rather than eyeballing it (see `references/verification.md`):
+toggling the focus object and diffing pixels took one scene's selected routes
+from mean contrast 72 to 230 — **3.2x** — while pixel coverage barely moved,
+which is exactly the difference between "drawn" and "visible".
+
+Any pass that hides the routes (the GPU pick pass) must hide *both* objects, or
+the one it misses keeps writing colour.
 
 ## Colour management: the trap that makes everything look wrong
 
-This is the single most common source of "the colours are off and I can't say
-why" in a Three.js app, and it is invisible until you compare against a
-built-in material.
+This is the most common source of "the colours are off and I can't say why" in a
+Three.js app, and it is invisible until you compare against a built-in material.
 
-Three.js colour-manages `THREE.Color`: setting one from a hex string stores
-**linear** working-space values. Built-in materials (`MeshStandardMaterial`,
+Three.js colour-manages `THREE.Color`: setting one from hex stores **linear**
+working-space values. Built-in materials (`MeshStandardMaterial`,
 `LineBasicMaterial`, …) encode that back to sRGB on output for you. A raw
-`ShaderMaterial` receives none of that processing, so whatever you assign to
-`gl_FragColor` is written straight into an sRGB framebuffer. Linear values
-interpreted as sRGB render **darker and more saturated** than the palette says.
+`ShaderMaterial` receives none of that, so whatever you assign to `gl_FragColor`
+goes straight into an sRGB framebuffer. Linear values read as sRGB render
+**darker and more saturated** than the palette says.
 
 End every custom fragment shader that outputs a colour with:
 
@@ -193,294 +252,171 @@ gl_FragColor = vec4(colour, alpha);
 #include <colorspace_fragment>
 ```
 
-The tell that you have this bug: a hero node drawn with a built-in material
-looks right while the sprites around it — same nominal hex — look muddy.
+The tell: a hero node drawn with a built-in material looks right while the
+sprites around it — same nominal hex — look muddy.
 
-Two corollaries worth internalising:
+Two corollaries:
 
 - **Author uniforms as colours, not raw numbers.** A hand-tuned
   `vec3(0.22, 0.62, 0.92)` was tuned against the *un*-converted output, so
-  adding the conversion changes it. Store it as `new THREE.Color("#389eeb")`
-  instead and the round trip lands on the same pixels — authored in sRGB,
-  converted to linear on assignment, encoded back on output.
-- **Never convert a shader that encodes data.** GPU picking writes an integer
-  id as RGB. Colour-space encoding that value corrupts the id and breaks
-  hover and click. Leave those shaders raw and put a comment saying why, or
-  someone will later "fix" them.
+  adding the conversion changes it. Store `new THREE.Color("#389eeb")` and the
+  round trip lands on the same pixels, by a correct route.
+- **Never convert a shader that encodes data.** GPU picking writes an integer id
+  as RGB; encoding it for sRGB corrupts the id and breaks hover and click.
 
 ## Interaction: picking
 
-### Screen-space quadtree (CPU)
+Raycasting thousands of points per pointer move is wasteful. Two workable
+approaches, covered in `references/picking.md`:
 
-Raycasting against thousands of points every pointer move is wasteful. Project
-visible node world-positions to 2D and index them in a `d3.quadtree`. Cache it;
-rebuild only when a `projectionDirty` flag is set (camera `change`, resize,
-filter/selection change) — not every frame. Throttle `pointermove` to one
-`requestAnimationFrame` in flight, look up with `quadtree.find(x, y, radius)`,
-and distinguish click from drag by squared pointer delta before treating a
-pointerup as a selection.
+- **Screen-space `d3.quadtree`** over projected positions, rebuilt on a dirty
+  flag rather than per frame. Cheap, but flat: it cannot know the globe occludes
+  far-side nodes, so it needs a horizon test — and that analytic test is exact
+  only for points *on* the sphere, so markers sitting above the surface get
+  over-culled (11.5% of airports in one measured scene).
+- **GPU picking**, rendering indices as colour into a small offscreen target.
+  The depth buffer resolves occlusion exactly, which deletes the quadtree, the
+  reprojection and the horizon test together.
 
-A screen-space index is flat, so it cannot know the globe is in the way: nodes
-on the far hemisphere project onto the visible disc and steal the hover. The
-patch is a horizon test — for a sphere of radius R at the origin, a point is
-camera-facing when `dot(p, cameraPosition) >= R²`. Be aware this is exact only
-for points *on* the sphere. Markers sitting slightly above it (radius 1.014
-over a radius-1 globe) can legitimately peek over the limb, and the analytic
-test culls them: in one 3,265-airport scene it made **159 visible airports
-(11.5%) unhoverable**.
+Read the reference before implementing either; the details that matter
+(`setViewOffset`, id 0 reserved, per-vertex `aPickable`, restoring swapped
+materials) are all places where a plausible implementation is subtly wrong.
 
-### GPU picking (preferred when picking must be exact)
+Camera fly-to animations lerp `camera.position` and `controls.target` with a
+cubic ease, collapsing to instant under reduced motion.
 
-Render the pickable objects into a small offscreen target with their index
-encoded as colour, then read back the pixels under the cursor. The depth buffer
-resolves occlusion for free, so nothing behind the planet can ever be picked
-and the horizon test disappears along with the quadtree, the reprojection, and
-the staleness heuristic.
+## Theming
 
-- Use `camera.setViewOffset(fullW, fullH, x-r, y-r, size, size)` to render only
-  the region under the cursor at 1:1 scale, so `gl_PointSize` — and therefore
-  the hit area — matches what is on screen. Clear it with `clearViewOffset()`.
-- Reserve id 0 for "nothing", so encode `index + 1`.
-- Sample a small square rather than one pixel and take the hit nearest the
-  centre; that reproduces the forgiving radius of a quadtree search.
-- Give the pick pass its own view of the scene: hide decorative objects that
-  would write colour (stars, graticule, route lines, atmosphere), and swap the
-  occluding body to a material that writes depth but emits id 0. Record every
-  swap and restore it afterwards.
-- Gate pickability with a per-vertex `aPickable` attribute rather than an alpha
-  threshold, so changing how dimmed items *look* can never silently change what
-  is *clickable*.
-- Work in device pixels (multiply by `renderer.getPixelRatio()`), and remember
-  `readRenderTargetPixels` returns rows bottom-up.
+Treat a theme as data, not branching code: define both looks in one module so
+scene modules hold no colour literals, push the palette through the `options`
+object that already carries filters, and **swap** prebuilt materials rather than
+rebuilding the scene.
 
-Camera focus animations (fly-to) lerp `camera.position` and `controls.target`
-with a cubic ease, and collapse to instant when reduced motion is requested.
+More differs between dark and light than hue — blending mode, inverted mark
+colours, fog, backdrop elements, light intensities. Keep a colourblind-safe
+palette (Okabe–Ito) and derive light from the same hues so both read as one
+system.
 
-## Theming: two looks from one scene
+Two traps that will cost you an afternoon, both detailed in
+`references/theming-and-contrast.md`:
 
-Treat a theme as data, not as branching code. Define every look in one module
-so a change to one is visible against the other, and so scene modules hold no
-colour literals:
+- **Variables only help if the stylesheet consumes them.** Rules that hardcode
+  `background: #11131a` leave surfaces dark while text flips to the new palette
+  — dark-on-dark, and hundreds of contrast failures at once.
+- **Never transition a property whose value comes from a theme custom
+  property.** It freezes on the old theme's colour permanently. Setting the
+  colour explicitly does not help; nor does suppressing transitions during the
+  swap. Remove those properties from the transition list.
 
-```js
-export const THEMES = {
-  dark:  { fog, node: {hub, mid, low}, route: {...}, routeBlending,
-           routeOpacity, globe, grid, atmosphere, stars, terrain, borders, lights },
-  light: { /* same shape */ },
-};
-```
+Read that reference before shipping a theme, and audit contrast in **both**
+themes and after a live toggle, not just on load.
 
-Then push the palette through the bridge you already have — put `theme` in the
-same `options` object that carries filters, so `apiRef.current.update(options,
-selected)` re-themes the scene by the existing path. Build both materials up
-front and **swap** them (`globe.material = terrainMaterial`) rather than
-rebuilding the scene; a theme toggle should not cost a WebGL context.
+## Layout: collapsible chrome around a canvas
 
-What actually has to change between a dark and a light scene — more than
-beginners expect:
+Letting the user collapse a sidebar is mostly CSS, with two traps:
 
-- **Blending.** `AdditiveBlending` makes overlapping routes glow against black
-  and washes out to white against a light ground. Light themes need
-  `NormalBlending`, darker inks, and slightly lower opacity so arcs read as
-  lines drawn on a map rather than light emitted in space.
-- **Mark colours must invert, not just shift.** The least-connected nodes are
-  near-white on dark and near-black on light. A palette that only re-tints hues
-  will leave your smallest marks invisible.
-- **Fog colour and density** must track the page background, or the globe fades
-  into the wrong colour at its edges.
-- **Backdrop elements** that only make sense in one theme (a star field) get
-  hidden rather than recoloured.
-- **Lights.** A hemisphere light tuned for a dark scene leaves a light map
-  muddy; raise ambient and lower the directional contribution.
+- **`display: none` removes a grid item.** Setting the collapsed column to `0`
+  and hiding the sidebar makes auto-placement drop the canvas *into* that empty
+  zero-width track, so the canvas gets no width at all. Switch the grid to a
+  single column when collapsed.
+- **Resize the renderer explicitly.** A `ResizeObserver` is right for genuine
+  window resizes, but for a layout change the app makes itself, call `resize()`
+  directly from an effect on the toggle. Browsers throttle observer delivery,
+  and in a non-compositing context it may not fire at all — leaving the CSS size
+  correct while the drawing buffer stays stale and the globe renders stretched.
 
-Keep a colourblind-safe palette (Okabe–Ito: sky `#56b4e9`, orange `#e69f00`,
-green `#009e73`, blue `#0072b2`, vermillion `#d55e00`, purple `#cc79a7`, yellow
-`#f0e442`) and derive the light theme from the *same* hues rather than
-introducing new ones, so the two themes read as one system. Re-weight for
-contrast: an accent that works on black (sky blue) usually needs to drop to the
-darker blue on white.
+Prefer removing collapsed controls (`display: none`) over merely hiding them, so
+they leave the tab order and the accessibility tree rather than becoming
+invisible tab stops.
 
-### Theme selection and the DOM half
+## Verifying visual work
 
-Mirror the scene theme onto the document so CSS follows the same switch:
+When you cannot see the canvas — headless, hidden pane, paused rAF — measure
+instead of reasoning. `references/verification.md` covers driving the renderer
+by hand, sampling rendered pixels at known coordinates, diffing with a layer
+toggled, and reading `renderer.info.render` to separate "not drawn" from "drawn
+but invisible".
 
-- Resolve the initial theme once, before first paint: an explicit stored choice
-  wins, otherwise `matchMedia("(prefers-color-scheme: light)")`.
-- Write `document.documentElement.dataset.theme` and define
-  `:root[data-theme="light"]` overrides for your CSS custom properties, plus
-  `color-scheme` so form controls and scrollbars follow.
-- Persist only *explicit* choices, and keep listening to the media query while
-  none is stored so the app tracks the OS until the user overrides it. Wrap
-  `localStorage` in try/catch — it throws in some privacy modes.
+Three environment effects produce convincing false conclusions and are worth
+remembering even without reading the file: **React state is asynchronous** (a
+click and a read in the same tick shows the previous state), **rAF and
+observers may not run** in a non-compositing page (prove it with a control
+observer before blaming the code), and **a dev server can serve a stale module**
+(fetch what the server is actually serving before debugging code that looks
+correct).
 
-## Map surfaces: terrain from packed rasters
-
-To shade a globe with real topography while staying on-palette, sample data in
-a shader and colour it yourself rather than wrapping a photographic texture.
-
-**Pack the channels.** One RGB texture carries everything: elevation in red,
-a land/water mask in green. One fetch, one sampler, no alignment risk between
-layers.
-
-**Do not derive water from elevation.** Public elevation rasters routinely
-clamp everything at or below sea level to zero, so thresholding the elevation
-channel floods the Netherlands, the Bangladesh delta, and every other low-lying
-coast — while a genuine ocean trench reads identically to Amsterdam. Build the
-mask from vector coastlines (`world-atlas` land polygons) with lake polygons
-punched out. Sanity-check it by area: weight each row by `cos(latitude)` and
-compare against Earth's ~29% land. Unweighted pixel counts run high because
-equirectangular projection inflates the poles.
-
-**Colour with a hypsometric ramp** through your existing palette — bluish green
-lowlands, yellow, orange, vermillion, bleaching to near-white at the peaks.
-Interpolate with `smoothstep` between stops.
-
-**Hillshade from the height gradient.** Sample four neighbours and build a
-slope normal. Rescale the east-west component by `sin(v * PI)` (the cosine of
-latitude): longitude texels converge at the poles, and without the correction
-polar terrain shears into streaks.
-
-**Tie shore tints to the coastline, not to height.** Keying a pale shore colour
-to low elevation turns entire continental basins — the Amazon, the Congo, the
-Gangetic plain — into what looks like water, because they sit only metres above
-sea level. Key it to the softened edge of the mask instead.
-
-Set the data texture's `colorSpace` to `NoColorSpace`: it carries measurements,
-not colour, and must not be decoded.
-
-### Preparing the raster offline
-
-Sphere UVs from `THREE.SphereGeometry` are already equirectangular and line up
-with a standard `(lon+180)/360`, `(90-lat)/180` image if you leave the default
-`flipY`. Two failure modes dominate when rasterising vector polygons into that
-image, and both produce obvious artifacts:
-
-- **Antimeridian wrap.** A ring crossing 180° jumps +179 → −179 and rasterises
-  as a band straight across the whole map. Unwrap longitudes so they stay
-  continuous, then draw each polygon at three horizontal offsets (−W, 0, +W)
-  and let the canvas clip.
-- **Polar rings.** A ring whose unwrapped longitude spans a full turn encircles
-  the globe and is closed by the *edge of the map*, not by a segment back to
-  its start. Antarctica is the real case: it runs −180 → +180 along ~−84° and
-  the cap below is implied. Close it explicitly over the pole or the cap gets
-  sliced off.
-
-## Vector overlays and level of detail
-
-Draw country outlines as `LineSegments` tessellated along great circles —
-subdivide any segment longer than a few degrees, or long borders cut through
-the sphere. Place them just above the surface and *below* your markers (e.g.
-1.0025 over a radius-1 globe with nodes at 1.014) so they neither z-fight nor
-occlude a node.
-
-Load coarse geometry first (110m) and fetch finer geometry (50m) only when the
-camera moves inside a distance threshold, keeping both built so the swap is a
-geometry assignment. Guard the fetch with a "loading" flag or a camera that
-lingers near the threshold will request the file repeatedly.
-
-Theme-specific assets — the terrain texture, the border files — should be
-fetched lazily on first use of the theme that needs them, so a session that
-never leaves dark mode never downloads them.
-
-## Verifying visual work you cannot screenshot
-
-Headless environments, hidden panes, and paused `requestAnimationFrame` all
-make "just look at it" unavailable. These techniques are more rigorous than
-eyeballing anyway, and worth using even when you *can* see the canvas:
-
-- **Drive the renderer by hand.** If the rAF loop is paused, call
-  `renderer.render(scene, camera)` directly, then `gl.readPixels`. Before
-  projecting anything yourself, force `camera.updateMatrixWorld(true)` and
-  recompute `matrixWorldInverse` — otherwise your maths uses last frame's
-  matrices while the renderer uses this frame's, and the two disagree.
-- **Sample rendered pixels at known coordinates.** Point the camera at a known
-  lat/lon, render, read the centre pixel, and compare against the palette hex.
-  This catches colour-space bugs, ramp errors, and mask errors precisely, and
-  it tells you *which* stage is wrong.
-- **Isolate by toggling.** Hide layers one at a time to find what is covering
-  what. A single keypress that hides the globe answers "is this occlusion or
-  shading?" faster than any amount of reasoning.
-- **Count what reached the GPU.** `renderer.info.render` (`calls`, `points`,
-  `lines`) separates "not drawn" from "drawn but invisible" — completely
-  different bugs with the same symptom.
-- **Render the same maths offline.** Reimplementing a shader's ramp in
-  NumPy over the real texture produces a full-map preview in seconds and
-  reveals data artifacts (stripes, missing caps) that are nearly impossible to
-  spot on a sphere.
-- **Instrument the running app early.** When a symptom cannot be reproduced
-  locally, a small debug HUD behind a query flag — camera position, pixel
-  ratio, draw counts, buffer stats — beats another round of reading the source.
-  Reading code is weak evidence next to a measurement from the machine where
-  the bug actually happens.
+If you have asserted a root cause twice without a measurement, stop and
+instrument.
 
 ## Performance patterns (apply throughout)
 
 - Clamp `renderer.setPixelRatio(Math.min(devicePixelRatio, 1.75))` up front.
-- **Adaptive quality:** sample recent frame deltas in the animate loop; if the
-  rolling mean exceeds ~24ms (sub-40fps) while pixel ratio is still >1, drop it
-  to 1 and resize. A runtime fallback beats a fixed low cap.
-- Use a `ResizeObserver` on the host element, not window resize, and pass
-  `renderer.setSize(w, h, false)` (don't touch CSS size).
-- Avoid per-node allocation in update paths: write `color.r/g/b` into the
-  buffer directly instead of `buffer.set(color.toArray(), i*3)`, which
-  allocates an array per node per update.
-- Memoize expensive derived React values (`useMemo` for search results,
-  filtered counts) and stabilize effect deps with `useCallback`.
-- **Dispose everything on unmount:** cancel the rAF and any idle callback,
-  disconnect the ResizeObserver, remove all DOM listeners, `scene.traverse`
-  disposing every geometry/material, dispose render targets, then
-  `renderer.dispose()` and remove the canvas. WebGL buffers are not
-  garbage-collected like JS objects — leaks here crash long sessions.
+- **Adaptive quality:** sample recent frame deltas; if the rolling mean exceeds
+  ~24ms while pixel ratio is still >1, drop it to 1 and resize.
+- Use a `ResizeObserver` on the host element, not window resize, and
+  `renderer.setSize(w, h, false)` so CSS size is left alone.
+- Avoid per-node allocation in update paths: write `color.r/g/b` into the buffer
+  directly instead of `buffer.set(color.toArray(), i*3)`.
+- Memoize derived React values and stabilize effect deps with `useCallback`.
+- **Dispose everything on unmount:** cancel the rAF and idle callbacks,
+  disconnect observers, remove DOM listeners, `scene.traverse` disposing every
+  geometry/material, dispose render targets, then `renderer.dispose()` and
+  remove the canvas. WebGL buffers are not garbage-collected like JS objects.
 
 ## Accessibility patterns (apply throughout)
 
-- Skip-link to jump past the header into the controls.
+- Skip-link past the header into the controls.
 - Give the canvas `role="img"` + a descriptive `aria-label` summarizing
   node/edge counts, and `tabindex=0` with a visible `:focus-visible` outline.
-- A visually-hidden `aria-live="polite"` region announces the
-  selected/hovered entity (name, location, degree) — the visual tooltip alone
-  is invisible to screen readers.
-- Keyboard shortcuts (`/` focus search, `Esc` clear, `R` reset camera) must
-  guard against firing while an `<input>` is focused.
-- Toggles use `aria-pressed` / `aria-expanded`; listboxes use
-  `role="listbox"`/`role="option"`; every slider/select has a label.
-- Respect `prefers-reduced-motion` at **both** layers: a JS check (via
-  `matchMedia`, read once) to disable camera-fly easing and auto-rotate, and a
-  CSS block flattening transitions/animations.
-- Check contrast in **both** themes. A palette validated on black can fail on
-  white, particularly for thin route lines and small marks.
+- A visually-hidden `aria-live="polite"` region announces the selected/hovered
+  entity — the visual tooltip alone is invisible to screen readers.
+- Keyboard shortcuts (`/` search, `Esc` clear, `R` reset) must not fire while an
+  `<input>` is focused.
+- Toggles use `aria-pressed` / `aria-expanded` (plus `aria-controls` when they
+  govern a region); every slider and select has a label.
+- **Announce loading states.** During startup lead with what is happening in a
+  `role="status" aria-live="polite"` region rather than showing file-picker
+  instructions, which read as an error when nothing is wrong. Mark a progress
+  bar `aria-hidden`; an `aria-label` on a bare `div` is not announced.
+- Respect `prefers-reduced-motion` at **both** layers: a JS `matchMedia` check
+  to disable camera easing and auto-rotate, and a CSS block flattening
+  transitions.
+- Audit contrast programmatically in both themes — see
+  `references/theming-and-contrast.md`. A text-only audit misses non-text
+  contrast, and unstyled links fall back to `#0000ee`, which fails on both.
 
 ## Stack & authoring notes
 
 - Vite + `@vitejs/plugin-react`. Pin `vite` to a range the React plugin's
-  peer-deps actually list (a too-new `vite` major triggers `ERESOLVE`).
+  peer-deps list (a too-new major triggers `ERESOLVE`).
 - Write real **JSX**, not htm tagged templates — it unlocks `jsx-a11y` and
-  `react-hooks/exhaustive-deps` lint, better stack traces, and IDE tooling,
-  with no runtime cost.
-- Import Three.js addons from `three/addons/...` (e.g. `OrbitControls`).
-- Serve large data assets from `public/` and `fetch` them at runtime with
-  `import.meta.env.BASE_URL` so they survive a non-root deployment base;
-  provide a drag-and-drop file fallback for when local `fetch` is blocked.
-- Geographic vectors: `world-atlas` (TopoJSON countries/land) plus Natural
-  Earth GeoJSON for lakes. Decoding TopoJSON is ~30 lines (delta-decode arcs,
-  apply the quantisation transform, stitch rings, negative index means
-  reversed) if you would rather not add `topojson-client`.
+  `react-hooks/exhaustive-deps` lint and better stack traces, at no runtime
+  cost.
+- Import Three.js addons from `three/addons/...`.
+- Serve large assets from `public/` and fetch with `import.meta.env.BASE_URL` so
+  they survive a non-root deployment base.
+- Geographic vectors: `world-atlas` (TopoJSON countries/land) plus Natural Earth
+  GeoJSON for lakes.
 
 ## Common traps
 
-- Rebuilding the scene on every option change (keep the setup effect keyed on
-  `data` only).
+- Rebuilding the scene on every option change (key the setup effect on `data`).
 - One mesh per node (batch into Points/LineSegments/InstancedMesh).
 - Raycasting for hover at scale (project + quadtree, or GPU picking).
 - Re-rendering React on animation frames (drive the loop with refs).
-- Forgetting to dispose GPU resources (leaks accumulate per remount).
-- Using `depthWrite: true` on additive-blended transparent lines (causes
-  ordering artifacts — keep it false for the glow layers).
-- Marking a solid body `transparent: true` (it joins the transparent queue and
-  paints over your markers).
+- Forgetting to dispose GPU resources.
+- `depthWrite: true` on additive-blended transparent lines (ordering artifacts).
+- Marking a solid body `transparent: true` (it paints over your markers).
 - Omitting `#include <colorspace_fragment>` from custom shaders (everything
   renders dark), or adding it to a shader that encodes ids (picking breaks).
 - Reusing additive blending in a light theme (arcs wash out to white).
+- Expecting colour alone to make a selection visible in a dense field.
+- Adding theme variables while rules still hardcode colours (dark-on-dark).
+- Transitioning a property whose value comes from a theme custom property (it
+  freezes on the old theme's colour).
 - Deriving a water mask by thresholding elevation (low-lying land floods).
-- Rasterising lon/lat polygons without unwrapping the antimeridian (stripes
-  across the map) or closing polar rings (missing ice caps).
+- Rasterising lon/lat polygons without unwrapping the antimeridian (stripes) or
+  closing polar rings (missing ice caps).
+- Collapsing a grid column to `0` while `display: none` removes the item (the
+  canvas lands in the empty track and gets no width).
+- Trusting a `ResizeObserver` for a layout change you made yourself.

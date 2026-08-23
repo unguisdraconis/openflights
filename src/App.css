@@ -232,19 +232,26 @@ h1 {
   font-size: 17px;
 }
 
-.mobile-menu-btn {
-  display: none;
-}
-
-@media (max-width: 680px) {
-  .mobile-menu-btn {
-    display: grid;
-  }
+.menu-btn {
+  display: grid;
 }
 .main {
   min-height: 0;
   display: grid;
   grid-template-columns: 300px minmax(0, 1fr);
+}
+@media (min-width: 681px) {
+  /* One column, not a zero-width first column: the collapsed sidebar is
+     display:none, which removes it as a grid item, so auto-placement would
+     drop the stage into that empty first track and give the canvas no width. */
+  .app.sidebar-collapsed .main {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  /* Removed rather than merely hidden, so collapsed controls are also out of
+     the tab order and the accessibility tree. */
+  .app.sidebar-collapsed .sidebar {
+    display: none;
+  }
 }
 .sidebar {
   z-index: 12;

@@ -2,6 +2,12 @@ import { useEffect } from "react";
 import * as d3 from "d3";
 import { idle, cancelIdle } from "../constants.js";
 
+// The force layout is the most expensive thing this app does — on a
+// 3,265-node / 18,972-link graph it is ~5.4s of main-thread work, around 63ms
+// per tick, which is more than an idle slice can absorb. It runs eagerly at
+// startup anyway: deferring it until the topology view is opened moved the
+// cost to a point where the user is waiting on it, which reads worse than
+// absorbing it in the background while they explore the globe.
 export function useGraphLayout(data, positions, onReady) {
   useEffect(() => {
     if (!data) return;

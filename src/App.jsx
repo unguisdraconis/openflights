@@ -12,6 +12,14 @@ import { Stat } from "./ui/Stat.jsx";
 
 // An explicit choice is remembered; otherwise follow the OS. Read once at
 // startup so the first paint is already in the right theme.
+// Above this width the sidebar is a column beside the globe; below it, an
+// overlay drawer. Kept in sync with the breakpoint in App.css.
+const DESKTOP = "(min-width: 681px)";
+const isDesktop = () =>
+  typeof window === "undefined" || !window.matchMedia
+    ? true
+    : window.matchMedia(DESKTOP).matches;
+
 const initialTheme = () => {
   if (typeof window === "undefined") return "dark";
   try {
@@ -43,7 +51,7 @@ function App() {
     [hover, setHover] = useState(null),
     [tipPoint, setTipPoint] = useState(null),
     [focusRequest, setFocusRequest] = useState(null),
-    [menuOpen, setMenuOpen] = useState(false),
+    [sidebarOpen, setSidebarOpen] = useState(isDesktop),
     [topologyVersion, setTopologyVersion] = useState(0);
   const graphReady = useCallback(() => setTopologyVersion((v) => v + 1), []);
   // Render positions live in index-aligned tables beside the graph, never on
@@ -53,6 +61,10 @@ function App() {
     [data],
   );
   useGraphLayout(data, positions, graphReady);
+  // Until the simulation finishes, the topology view falls back to geographic
+  // positions, so say what is happening rather than showing an unexplained
+  // sphere of points where a graph was expected.
+  const layoutPending = options.view === "topology" && topologyVersion === 0;
   const load = useCallback((airportsText, routesText, customError) => {
     if (customError) {
       setError(customError);
@@ -166,7 +178,7 @@ function App() {
     setHover(null);
     setTipPoint(point || { x: innerWidth * 0.56, y: innerHeight * 0.3 });
     setFocusRequest({ node, id: performance.now() });
-    setMenuOpen(false);
+    if (!isDesktop()) setSidebarOpen(false);
   };
   const clearSelection = () => {
     setSelected(null);
@@ -191,13 +203,15 @@ function App() {
     [data, options.scope, options.country, options.minDegree],
   );
   return (
-    <div className="app">
+    <div className={`app ${sidebarOpen ? "" : "sidebar-collapsed"}`}>
       <header className="topbar">
         <button
-          className="icon-btn mobile-menu-btn"
-          onClick={() => setMenuOpen((v) => !v)}
-          aria-label="Toggle controls"
-          aria-expanded={menuOpen}
+          className="icon-btn menu-btn"
+          onClick={() => setSidebarOpen((v) => !v)}
+          aria-label={sidebarOpen ? "Hide controls" : "Show controls"}
+          aria-expanded={sidebarOpen}
+          aria-controls="controls"
+          title={sidebarOpen ? "Hide controls" : "Show controls"}
         >
           ☰
         </button>
@@ -237,7 +251,7 @@ function App() {
             selected={selected}
             selectNode={selectNode}
             clearSelection={clearSelection}
-            open={menuOpen}
+            open={sidebarOpen}
           />
         )}
         <section className="stage" aria-label="3D flight visualization">
@@ -245,6 +259,7 @@ function App() {
             <GlobeScene
               data={data}
               positions={positions}
+              sidebarOpen={sidebarOpen}
               options={options}
               selected={selected}
               topologyVersion={topologyVersion}
@@ -264,7 +279,7 @@ function App() {
                 {options.view === "globe"
                   ? "GEOGRAPHIC GLOBE"
                   : "FORCE-DIRECTED TOPOLOGY"}{" "}
-                · {options.density}% ROUTES
+                · {layoutPending ? "COMPUTING LAYOUT…" : `${options.density}% ROUTES`}
               </span>
             </div>
           )}
@@ -272,6 +287,9 @@ function App() {
           {!data && (
             <LoadScreen onLoaded={load} loading={loading} error={error} />
           )}
+          <div className="sr-only" role="status" aria-live="polite">
+            {layoutPending ? "Computing force-directed layout." : ""}
+          </div>
           <div className="sr-only" aria-live="polite">
             {tooltipNode
               ? `${tooltipNode.name}, ${tooltipNode.city}, ${tooltipNode.country}. ${tooltipNode.degree} direct connections.`

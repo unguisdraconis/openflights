@@ -18,6 +18,7 @@ export function GlobeScene({
   data,
   positions,
   options,
+  sidebarOpen,
   selected,
   onHover,
   onSelect,
@@ -159,9 +160,6 @@ export function GlobeScene({
       controls.minDistance = opts.view === "globe" ? 1.55 : 1.2;
       controls.maxDistance = opts.view === "globe" ? 8 : 10;
     };
-    apiRef.current = { update, focusNode, resetCamera };
-    update(options, selected);
-
     const resize = () => {
       const w = host.clientWidth,
         h = host.clientHeight;
@@ -171,6 +169,11 @@ export function GlobeScene({
       renderer.setSize(w, h, false);
       sprites.resize();
     };
+    // Declared before the handle is published: `resize` is a const, so
+    // referencing it any earlier would hit the temporal dead zone.
+    apiRef.current = { update, focusNode, resetCamera, resize };
+    update(options, selected);
+
     const ro = new ResizeObserver(resize);
     ro.observe(host);
     resize();
@@ -233,5 +236,12 @@ export function GlobeScene({
   useEffect(() => {
     if (focusRequest?.node) apiRef.current?.focusNode(focusRequest.node);
   }, [focusRequest]);
+  // Collapsing the sidebar changes the canvas size. A ResizeObserver would
+  // eventually catch it, but this is a layout change the app makes itself, so
+  // resize directly instead of waiting on an async observer that browsers
+  // throttle when the page is not compositing.
+  useEffect(() => {
+    apiRef.current?.resize();
+  }, [sidebarOpen]);
   return <div ref={hostRef} className="canvas-host"></div>;
 }
