@@ -66,4 +66,4 @@ package, with Natural Earth lake polygons removed from the land mask.
 
 Flight network (airports & routes):
 OpenFlights database (openflights.org; jpatokal/openflights on GitHub),
-Open Database License (ODbL) — verify current terms on the source.
+made available under the Open Database License (ODbL) v1.0.
