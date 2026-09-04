@@ -48,3 +48,22 @@ The OpenFlights assets are served from:
 - `public/routes.dat`
 
 The app fetches them as `/airports.dat` and `/routes.dat`.
+
+## Data sources & attribution
+
+Terrain relief (globe elevation):
+NASA "SRTM RAMP2" global topography — a composite of Shuttle Radar
+Topography Mission data (NASA/JPL & NGA), the RADARSAT Antarctic Mapping
+Project (RAMP) for Antarctica, and USGS GTOPO30 for latitudes north of
+SRTM coverage. Distributed by NASA Earth Observatory. Public domain (NASA).
+The elevation raster was recolored with a custom hypsometric palette for
+this project; ocean has no bathymetry in the source and is masked and
+tinted separately.
+
+Coastlines, land/water mask, lakes, and country borders:
+Natural Earth (public domain), delivered via the world-atlas TopoJSON
+package, with Natural Earth lake polygons removed from the land mask.
+
+Flight network (airports & routes):
+OpenFlights database (openflights.org; jpatokal/openflights on GitHub),
+Open Database License (ODbL) — verify current terms on the source.
