@@ -101,9 +101,9 @@ Repository evidence shows:
 - Polite status/live-region updates for topology-layout progress, airport-search results, and current airport details.
 - Global shortcuts: `/` focuses airport search, `Esc` clears airport selection, and `R` resets the camera. `/` and `R` yield to focused interactive/editable controls and browser-modified shortcut contexts.
 - CSS motion reduction and reactive JavaScript handling for `prefers-reduced-motion: reduce`. Automatic globe rotation is suspended while reduced motion is active without changing the user's auto-rotate preference, and resumes when reduced motion is removed if that preference remains enabled.
-- Selected-route emphasis that supplements color with opacity, draw order, and, on the globe, a small elevation offset.
+- Domestic routes use solid lines and international routes use dashed lines, with color retained as a secondary category cue. Selected-route emphasis adds color, opacity, draw order, and, on the globe, a small elevation offset while retaining the underlying solid or dashed category pattern.
 
-These are implemented behaviors, not a WCAG conformance claim. Manual keyboard, screen-reader, zoom/reflow, contrast, pointer, and reduced-motion testing is still required. Remaining follow-up areas include direct structured airport exploration from the canvas and ensuring domestic/international route meaning is not communicated by color alone.
+These are implemented behaviors, not a WCAG conformance claim. Manual keyboard, screen-reader, zoom/reflow, contrast, pointer, and reduced-motion testing is still required. Direct structured airport exploration from the canvas remains a follow-up area.
 
 ## Local setup
 

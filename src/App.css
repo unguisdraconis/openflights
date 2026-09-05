@@ -16,6 +16,9 @@
   --green: #009e73;
   --red: #d55e00;
   --purple: #cc79a7;
+  --route-international: #56b4e9;
+  --route-domestic: #009e73;
+  --route-selected: #e69f00;
   --shadow: 0 18px 55px rgba(0, 0, 0, 0.34);
   --bg-topbar: rgba(11, 13, 18, 0.82);
   --bg-sidebar: rgba(16, 18, 24, 0.88);
@@ -68,6 +71,9 @@
   --bg-tooltip: rgba(255, 255, 255, 0.97);
   --bg-metric: rgba(20, 23, 28, 0.05);
   --on-accent: #ffffff;
+  --route-international: #0072b2;
+  --route-domestic: #009e73;
+  --route-selected: #d55e00;
   --error: #a33000;
   --grad-1: #f3f6fa;
   --grad-2: #e7ecf2;
@@ -433,6 +439,19 @@ select {
   width: 16px;
   height: 3px;
   border-radius: 3px;
+}
+.swatch-international {
+  background: repeating-linear-gradient(
+    to right,
+    var(--route-international) 0 4px,
+    transparent 4px 7px
+  );
+}
+.swatch-domestic {
+  background: var(--route-domestic);
+}
+.swatch-selected {
+  background: var(--route-selected);
 }
 .help {
   color: var(--muted);

@@ -247,16 +247,25 @@ export function Sidebar({
         </div>
         <div className="legend">
           <div className="legend-row">
-            <span className="swatch" style={{ background: "#56b4e9" }}></span>
-            <span>International connection</span>
+            <span
+              className="swatch swatch-international"
+              aria-hidden="true"
+            ></span>
+            <span>International connection — dashed</span>
           </div>
           <div className="legend-row">
-            <span className="swatch" style={{ background: "#009e73" }}></span>
-            <span>Domestic connection</span>
+            <span
+              className="swatch swatch-domestic"
+              aria-hidden="true"
+            ></span>
+            <span>Domestic connection — solid</span>
           </div>
           <div className="legend-row">
-            <span className="swatch" style={{ background: "#e69f00" }}></span>
-            <span>Selected-airport connection</span>
+            <span
+              className="swatch swatch-selected"
+              aria-hidden="true"
+            ></span>
+            <span>Selected-airport connection — emphasis, pattern retained</span>
           </div>
         </div>
       </section>
