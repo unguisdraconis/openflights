@@ -1,6 +1,5 @@
 import { useMemo, useState } from "react";
 import { fmt } from "../constants.js";
-import { LinkedInIcon, GitHubIcon } from "./icons.jsx";
 
 export function Sidebar({
   data,
@@ -242,26 +241,6 @@ export function Sidebar({
       </section>
 
       <footer className="sidebar-footer">
-        <div className="social-links">
-          <a
-            href="https://www.linkedin.com/in/jeremiahjking/"
-            className="social-btn"
-            target="_blank"
-            rel="noreferrer"
-            aria-label="LinkedIn"
-          >
-            <LinkedInIcon />
-          </a>
-          <a
-            href="https://github.com/unguisdraconis"
-            className="social-btn"
-            target="_blank"
-            rel="noreferrer"
-            aria-label="GitHub"
-          >
-            <GitHubIcon />
-          </a>
-        </div>
         <p className="data-source">© 2026 Jeremiah King</p>
         <p className="data-source">
           Data from{""}
@@ -284,12 +263,12 @@ export function Sidebar({
         <div id="about-data-panel" className="about-panel" hidden={!aboutOpen}>
           <p>
             <b>~7,700 airports</b> with IATA/ICAO codes, coordinates and
-            timezones. About 3,300 carry routes, forming the ~19,000
-            connections drawn here.
+            timezones. About 3,300 carry routes, forming the ~19,000 connections
+            drawn here.
           </p>
           <p>
-            Useful as reference data, and as a real-world scale-free network
-            for graph analysis and visualisation.
+            Useful as reference data, and as a real-world scale-free network for
+            graph analysis and visualisation.
           </p>
           <p>
             <b>A historical snapshot, not a live feed.</b> Airports are current
