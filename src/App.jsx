@@ -92,6 +92,8 @@ function App() {
     [isDesktopViewport, setIsDesktopViewport] = useState(isDesktop),
     [topologyVersion, setTopologyVersion] = useState(0);
   const sidebarToggleRef = useRef(null);
+  const loadedHeadingRef = useRef(null);
+  const pendingLoadedHeadingFocusRef = useRef(false);
   const focusSearchAfterOpenRef = useRef(false);
   const focusControlsAfterOpenRef = useRef(false);
   const focusSearchAfterBreakpointRef = useRef(false);
@@ -110,27 +112,38 @@ function App() {
   // positions, so say what is happening rather than showing an unexplained
   // sphere of points where a graph was expected.
   const layoutPending = options.view === "topology" && topologyVersion === 0;
-  const load = useCallback((airportsText, routesText, customError) => {
-    if (customError) {
-      setError(customError);
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    setError("");
-    setTimeout(() => {
-      try {
-        const parsed = parseData(airportsText, routesText);
-        if (!parsed.nodes.length || !parsed.links.length)
-          throw new Error("No usable airport-route pairs were found.");
-        setData(parsed);
-      } catch (e) {
-        setError(`Could not parse the files: ${e.message}`);
-      } finally {
+  const load = useCallback(
+    (airportsText, routesText, customError, restoreHeadingFocus = false) => {
+      pendingLoadedHeadingFocusRef.current = false;
+      if (customError) {
+        setError(customError);
         setLoading(false);
+        return;
       }
-    }, 30);
-  }, []);
+      setLoading(true);
+      setError("");
+      setTimeout(() => {
+        try {
+          const parsed = parseData(airportsText, routesText);
+          if (!parsed.nodes.length || !parsed.links.length)
+            throw new Error("No usable airport-route pairs were found.");
+          pendingLoadedHeadingFocusRef.current = restoreHeadingFocus;
+          setData(parsed);
+        } catch (e) {
+          pendingLoadedHeadingFocusRef.current = false;
+          setError(`Could not parse the files: ${e.message}`);
+        } finally {
+          setLoading(false);
+        }
+      }, 30);
+    },
+    [],
+  );
+  useLayoutEffect(() => {
+    if (!data || !pendingLoadedHeadingFocusRef.current) return;
+    pendingLoadedHeadingFocusRef.current = false;
+    loadedHeadingRef.current?.focus();
+  }, [data]);
   useEffect(() => {
     // Guard against the effect running twice (StrictMode) or the component
     // unmounting mid-flight, so a late response cannot revive dead state.
@@ -339,7 +352,9 @@ function App() {
         )}
         <div className="brand">
           <div className="eyebrow">Global aviation intelligence</div>
-          <h1>OpenFlights Network</h1>
+          <h1 ref={loadedHeadingRef} tabIndex={-1}>
+            OpenFlights Network
+          </h1>
         </div>
         {data && (
           <div className="stats" aria-label="Network summary">

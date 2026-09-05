@@ -2,16 +2,30 @@ import { useRef } from "react";
 
 export function LoadScreen({ onLoaded, loading, error }) {
   const inputRef = useRef();
+  const loadScreenRef = useRef();
   const processFiles = async (files) => {
+    const restoreHeadingFocus =
+      loadScreenRef.current?.contains(document.activeElement) ?? false;
     const list = [...files];
     const airports = list.find((f) => /airport/i.test(f.name));
     const routes = list.find((f) => /route/i.test(f.name));
     if (!airports || !routes)
-      return onLoaded(null, null, "Select both airports.dat and routes.dat.");
-    onLoaded(await airports.text(), await routes.text());
+      return onLoaded(
+        null,
+        null,
+        "Select both airports.dat and routes.dat.",
+        false,
+      );
+    onLoaded(
+      await airports.text(),
+      await routes.text(),
+      undefined,
+      restoreHeadingFocus,
+    );
   };
   return (
     <div
+      ref={loadScreenRef}
       className="load-screen"
       onDragOver={(e) => e.preventDefault()}
       onDrop={(e) => {
