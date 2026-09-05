@@ -88,13 +88,15 @@ function App() {
     [hover, setHover] = useState(null),
     [tipPoint, setTipPoint] = useState(null),
     [focusRequest, setFocusRequest] = useState(null),
-    [sidebarOpen, setSidebarOpen] = useState(isDesktop),
+    [sidebarOpen, setSidebarOpen] = useState(false),
     [isDesktopViewport, setIsDesktopViewport] = useState(isDesktop),
     [topologyVersion, setTopologyVersion] = useState(0);
   const sidebarToggleRef = useRef(null);
   const focusSearchAfterOpenRef = useRef(false);
   const focusControlsAfterOpenRef = useRef(false);
+  const focusSearchAfterBreakpointRef = useRef(false);
   const restoreSidebarFocusRef = useRef(false);
+  const controlsVisible = isDesktopViewport || sidebarOpen;
   const graphReady = useCallback(() => setTopologyVersion((v) => v + 1), []);
   // Render positions live in index-aligned tables beside the graph, never on
   // the airport records themselves.
@@ -203,7 +205,21 @@ function App() {
   useEffect(() => {
     const mq = window.matchMedia?.(DESKTOP);
     if (!mq) return;
-    const onChange = (event) => setIsDesktopViewport(event.matches);
+    const onChange = (event) => {
+      if (
+        event.matches &&
+        document.activeElement === sidebarToggleRef.current
+      )
+        focusSearchAfterBreakpointRef.current = true;
+      if (
+        !event.matches &&
+        document
+          .getElementById("controls")
+          ?.contains(document.activeElement)
+      )
+        setSidebarOpen(true);
+      setIsDesktopViewport(event.matches);
+    };
     mq.addEventListener("change", onChange);
     return () => mq.removeEventListener("change", onChange);
   }, []);
@@ -211,7 +227,7 @@ function App() {
     const skipLink = document.getElementById("skip-to-controls");
     if (!skipLink) return;
     const onActivate = (event) => {
-      if (!isDesktopViewport && !sidebarOpen) {
+      if (!controlsVisible) {
         event.preventDefault();
         focusControlsAfterOpenRef.current = true;
         setSidebarOpen(true);
@@ -219,29 +235,33 @@ function App() {
     };
     skipLink.addEventListener("click", onActivate);
     return () => skipLink.removeEventListener("click", onActivate);
-  }, [isDesktopViewport, sidebarOpen]);
+  }, [controlsVisible]);
   useLayoutEffect(() => {
-    if (sidebarOpen && focusSearchAfterOpenRef.current) {
+    if (controlsVisible && focusSearchAfterOpenRef.current) {
       focusSearchAfterOpenRef.current = false;
       document.getElementById("airport-search")?.focus();
     }
-    if (sidebarOpen && focusControlsAfterOpenRef.current) {
+    if (controlsVisible && focusControlsAfterOpenRef.current) {
       focusControlsAfterOpenRef.current = false;
       window.location.hash = "controls";
       document.getElementById("airport-search")?.focus();
     }
-    if (!sidebarOpen && restoreSidebarFocusRef.current) {
+    if (controlsVisible && focusSearchAfterBreakpointRef.current) {
+      focusSearchAfterBreakpointRef.current = false;
+      document.getElementById("airport-search")?.focus();
+    }
+    if (!controlsVisible && restoreSidebarFocusRef.current) {
       restoreSidebarFocusRef.current = false;
       sidebarToggleRef.current?.focus();
     }
-  }, [sidebarOpen]);
+  }, [controlsVisible, isDesktopViewport]);
   useEffect(() => {
     const key = (event) => {
       if (event.key === "/" && !shouldIgnoreCharacterShortcut(event)) {
         const search = document.getElementById("airport-search");
         if (!search) return;
         event.preventDefault();
-        if (!isDesktopViewport && !sidebarOpen) {
+        if (!controlsVisible) {
           focusSearchAfterOpenRef.current = true;
           setSidebarOpen(true);
         } else search.focus();
@@ -264,7 +284,7 @@ function App() {
     };
     window.addEventListener("keydown", key);
     return () => window.removeEventListener("keydown", key);
-  }, [isDesktopViewport, sidebarOpen]);
+  }, [controlsVisible]);
   const selectNode = (node, point, fromSidebar = false) => {
     setSelected(node);
     setHover(null);
@@ -298,19 +318,21 @@ function App() {
     [data, options.scope, options.country, options.minDegree],
   );
   return (
-    <div className={`app ${sidebarOpen ? "" : "sidebar-collapsed"}`}>
+    <div className="app">
       <header className="topbar">
-        <button
-          ref={sidebarToggleRef}
-          className="icon-btn menu-btn"
-          onClick={() => setSidebarOpen((v) => !v)}
-          aria-label={sidebarOpen ? "Hide controls" : "Show controls"}
-          aria-expanded={sidebarOpen}
-          aria-controls="controls"
-          title={sidebarOpen ? "Hide controls" : "Show controls"}
-        >
-          ☰
-        </button>
+        {!isDesktopViewport && (
+          <button
+            ref={sidebarToggleRef}
+            className="icon-btn menu-btn"
+            onClick={() => setSidebarOpen((v) => !v)}
+            aria-label={sidebarOpen ? "Hide controls" : "Show controls"}
+            aria-expanded={sidebarOpen}
+            aria-controls="controls"
+            title={sidebarOpen ? "Hide controls" : "Show controls"}
+          >
+            ☰
+          </button>
+        )}
         <div className="brand">
           <div className="eyebrow">Global aviation intelligence</div>
           <h1>OpenFlights Network</h1>
@@ -348,8 +370,8 @@ function App() {
             selectNode={selectNode}
             clearSelection={clearSelection}
             isDesktopViewport={isDesktopViewport}
-            open={sidebarOpen}
-            inert={!isDesktopViewport && !sidebarOpen}
+            open={controlsVisible}
+            inert={!controlsVisible}
           />
         )}
         <section className="stage" aria-label="3D flight visualization">
@@ -357,7 +379,7 @@ function App() {
             <GlobeScene
               data={data}
               positions={positions}
-              sidebarOpen={sidebarOpen}
+              sidebarOpen={controlsVisible}
               options={options}
               selected={selected}
               topologyVersion={topologyVersion}
