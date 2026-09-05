@@ -11,6 +11,7 @@ export function Sidebar({
   selectNode,
   clearSelection,
   open,
+  inert,
 }) {
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -28,6 +29,7 @@ export function Sidebar({
       id="controls"
       className={`sidebar ${open ? "open" : ""}`}
       aria-label="Network controls"
+      inert={inert ? "" : undefined}
     >
       <section className="section">
         <div className="section-title">
@@ -54,7 +56,7 @@ export function Sidebar({
                 className="result-btn"
                 role="option"
                 onClick={() => {
-                  selectNode(n);
+                  selectNode(n, undefined, true);
                   setQuery("");
                 }}
               >

@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { fmt } from "./constants.js";
 import { parseData } from "./data/parse.js";
 import { createPositionTables } from "./data/positions.js";
@@ -52,7 +59,11 @@ function App() {
     [tipPoint, setTipPoint] = useState(null),
     [focusRequest, setFocusRequest] = useState(null),
     [sidebarOpen, setSidebarOpen] = useState(isDesktop),
+    [isDesktopViewport, setIsDesktopViewport] = useState(isDesktop),
     [topologyVersion, setTopologyVersion] = useState(0);
+  const sidebarToggleRef = useRef(null);
+  const focusSearchAfterOpenRef = useRef(false);
+  const restoreSidebarFocusRef = useRef(false);
   const graphReady = useCallback(() => setTopologyVersion((v) => v + 1), []);
   // Render positions live in index-aligned tables beside the graph, never on
   // the airport records themselves.
@@ -159,10 +170,32 @@ function App() {
     return () => mq.removeEventListener("change", onChange);
   }, []);
   useEffect(() => {
+    const mq = window.matchMedia?.(DESKTOP);
+    if (!mq) return;
+    const onChange = (event) => setIsDesktopViewport(event.matches);
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
+  useLayoutEffect(() => {
+    if (sidebarOpen && focusSearchAfterOpenRef.current) {
+      focusSearchAfterOpenRef.current = false;
+      document.getElementById("airport-search")?.focus();
+    }
+    if (!sidebarOpen && restoreSidebarFocusRef.current) {
+      restoreSidebarFocusRef.current = false;
+      sidebarToggleRef.current?.focus();
+    }
+  }, [sidebarOpen]);
+  useEffect(() => {
     const key = (e) => {
       if (e.key === "/" && document.activeElement?.tagName !== "INPUT") {
         e.preventDefault();
-        document.getElementById("airport-search")?.focus();
+        const search = document.getElementById("airport-search");
+        if (!search) return;
+        if (!isDesktopViewport && !sidebarOpen) {
+          focusSearchAfterOpenRef.current = true;
+          setSidebarOpen(true);
+        } else search.focus();
       }
       if (e.key === "Escape") {
         setSelected(null);
@@ -172,13 +205,16 @@ function App() {
     };
     window.addEventListener("keydown", key);
     return () => window.removeEventListener("keydown", key);
-  }, []);
-  const selectNode = (node, point) => {
+  }, [isDesktopViewport, sidebarOpen]);
+  const selectNode = (node, point, fromSidebar = false) => {
     setSelected(node);
     setHover(null);
     setTipPoint(point || { x: innerWidth * 0.56, y: innerHeight * 0.3 });
     setFocusRequest({ node, id: performance.now() });
-    if (!isDesktop()) setSidebarOpen(false);
+    if (!isDesktopViewport) {
+      if (fromSidebar) restoreSidebarFocusRef.current = true;
+      setSidebarOpen(false);
+    }
   };
   const clearSelection = () => {
     setSelected(null);
@@ -206,6 +242,7 @@ function App() {
     <div className={`app ${sidebarOpen ? "" : "sidebar-collapsed"}`}>
       <header className="topbar">
         <button
+          ref={sidebarToggleRef}
           className="icon-btn menu-btn"
           onClick={() => setSidebarOpen((v) => !v)}
           aria-label={sidebarOpen ? "Hide controls" : "Show controls"}
@@ -252,6 +289,7 @@ function App() {
             selectNode={selectNode}
             clearSelection={clearSelection}
             open={sidebarOpen}
+            inert={!isDesktopViewport && !sidebarOpen}
           />
         )}
         <section className="stage" aria-label="3D flight visualization">
