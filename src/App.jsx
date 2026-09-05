@@ -40,6 +40,36 @@ const initialTheme = () => {
     : "dark";
 };
 
+const shortcutTarget = (event) =>
+  event.target instanceof Element ? event.target : document.activeElement;
+
+const isInteractiveShortcutTarget = (event) => {
+  const target = shortcutTarget(event);
+  if (!(target instanceof Element) || target.tagName === "CANVAS") return false;
+  return !!target.closest(
+    'input, textarea, select, button, a[href], [contenteditable]:not([contenteditable="false"]), [tabindex]:not([tabindex^="-"])',
+  );
+};
+
+const shouldIgnoreCharacterShortcut = (event) =>
+  event.defaultPrevented ||
+  event.isComposing ||
+  event.repeat ||
+  event.ctrlKey ||
+  event.metaKey ||
+  event.altKey ||
+  isInteractiveShortcutTarget(event);
+
+const isEscapeOwnedTarget = (event) => {
+  const target = shortcutTarget(event);
+  return (
+    target instanceof Element &&
+    !!target.closest(
+      'select, [contenteditable]:not([contenteditable="false"])',
+    )
+  );
+};
+
 function App() {
   const [data, setData] = useState(null),
     [loading, setLoading] = useState(true),
@@ -206,17 +236,27 @@ function App() {
     }
   }, [sidebarOpen]);
   useEffect(() => {
-    const key = (e) => {
-      if (e.key === "/" && document.activeElement?.tagName !== "INPUT") {
-        e.preventDefault();
+    const key = (event) => {
+      if (event.key === "/" && !shouldIgnoreCharacterShortcut(event)) {
         const search = document.getElementById("airport-search");
         if (!search) return;
+        event.preventDefault();
         if (!isDesktopViewport && !sidebarOpen) {
           focusSearchAfterOpenRef.current = true;
           setSidebarOpen(true);
         } else search.focus();
       }
-      if (e.key === "Escape") {
+      if (
+        event.key === "Escape" &&
+        !event.defaultPrevented &&
+        !event.isComposing &&
+        !event.repeat &&
+        !event.ctrlKey &&
+        !event.metaKey &&
+        !event.altKey &&
+        !event.shiftKey &&
+        !isEscapeOwnedTarget(event)
+      ) {
         setSelected(null);
         setHover(null);
         setTipPoint(null);

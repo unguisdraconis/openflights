@@ -10,6 +10,24 @@ import { createPicking } from "./picking.js";
 import { createBorders } from "./borders.js";
 import { themeFor } from "../theme.js";
 
+const isInteractiveShortcutTarget = (event) => {
+  const target =
+    event.target instanceof Element ? event.target : document.activeElement;
+  if (!(target instanceof Element) || target.tagName === "CANVAS") return false;
+  return !!target.closest(
+    'input, textarea, select, button, a[href], [contenteditable]:not([contenteditable="false"]), [tabindex]:not([tabindex^="-"])',
+  );
+};
+
+const shouldIgnoreCharacterShortcut = (event) =>
+  event.defaultPrevented ||
+  event.isComposing ||
+  event.repeat ||
+  event.ctrlKey ||
+  event.metaKey ||
+  event.altKey ||
+  isInteractiveShortcutTarget(event);
+
 // Composition root for the Three.js side. React renders the host div and
 // nothing else — the scene is built imperatively here, once per dataset, and
 // torn down by the returned cleanup. State flows in through apiRef; events
@@ -212,12 +230,13 @@ export function GlobeScene({
     };
     raf = requestAnimationFrame(animate);
 
-    const key = (e) => {
+    const key = (event) => {
       if (
-        e.key.toLowerCase() === "r" &&
-        document.activeElement?.tagName !== "INPUT"
-      )
+        event.key.toLowerCase() === "r" &&
+        !shouldIgnoreCharacterShortcut(event)
+      ) {
         resetCamera();
+      }
     };
     window.addEventListener("keydown", key);
 
