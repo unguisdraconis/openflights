@@ -113,7 +113,7 @@ export function createBorders(scene) {
   let enabled = false;
   let active = null;
 
-  const use = (level) => {
+  const activateLevel = (level) => {
     if (!levels[level] || active === level) return;
     lines.geometry = levels[level];
     active = level;
@@ -130,7 +130,7 @@ export function createBorders(scene) {
         loading[level] = false;
         // Only adopt it if it is still the level we want.
         if (enabled && (level === "110m" ? !levels["50m"] : true)) {
-          use(level);
+          activateLevel(level);
           onReady?.();
         }
       })
@@ -149,16 +149,16 @@ export function createBorders(scene) {
       material.color.set(palette.borders.color);
       material.opacity = palette.borders.opacity;
       if (!levels["110m"]) load("110m", onReady);
-      else use(levels["50m"] ? "50m" : "110m");
+      else activateLevel(levels["50m"] ? "50m" : "110m");
     },
     // Called as the camera moves: pull in the finer outlines once close.
     updateDetail(cameraDistance, onReady) {
       if (!enabled) return;
       if (cameraDistance <= DETAIL_DISTANCE) {
         if (!levels["50m"]) load("50m", onReady);
-        else use("50m");
+        else activateLevel("50m");
       } else if (levels["110m"]) {
-        use("110m");
+        activateLevel("110m");
       }
     },
     dispose() {
