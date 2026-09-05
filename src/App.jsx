@@ -63,6 +63,7 @@ function App() {
     [topologyVersion, setTopologyVersion] = useState(0);
   const sidebarToggleRef = useRef(null);
   const focusSearchAfterOpenRef = useRef(false);
+  const focusControlsAfterOpenRef = useRef(false);
   const restoreSidebarFocusRef = useRef(false);
   const graphReady = useCallback(() => setTopologyVersion((v) => v + 1), []);
   // Render positions live in index-aligned tables beside the graph, never on
@@ -176,9 +177,27 @@ function App() {
     mq.addEventListener("change", onChange);
     return () => mq.removeEventListener("change", onChange);
   }, []);
+  useEffect(() => {
+    const skipLink = document.getElementById("skip-to-controls");
+    if (!skipLink) return;
+    const onActivate = (event) => {
+      if (!isDesktopViewport && !sidebarOpen) {
+        event.preventDefault();
+        focusControlsAfterOpenRef.current = true;
+        setSidebarOpen(true);
+      }
+    };
+    skipLink.addEventListener("click", onActivate);
+    return () => skipLink.removeEventListener("click", onActivate);
+  }, [isDesktopViewport, sidebarOpen]);
   useLayoutEffect(() => {
     if (sidebarOpen && focusSearchAfterOpenRef.current) {
       focusSearchAfterOpenRef.current = false;
+      document.getElementById("airport-search")?.focus();
+    }
+    if (sidebarOpen && focusControlsAfterOpenRef.current) {
+      focusControlsAfterOpenRef.current = false;
+      window.location.hash = "controls";
       document.getElementById("airport-search")?.focus();
     }
     if (!sidebarOpen && restoreSidebarFocusRef.current) {
