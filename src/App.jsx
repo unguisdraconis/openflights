@@ -384,7 +384,7 @@ function App() {
           </div>
         )}
       </header>
-      <main className="main">
+      <main className={data ? "main" : "main no-data"}>
         {data && (
           <Sidebar
             data={data}
@@ -401,7 +401,12 @@ function App() {
             inert={!controlsVisible}
           />
         )}
-        <section className="stage" aria-label="3D flight visualization">
+        <section
+          className="stage"
+          aria-label={
+            data ? "3D flight visualization" : "Flight network data loader"
+          }
+        >
           {data && (
             <GlobeScene
               data={data}

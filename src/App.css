@@ -247,6 +247,9 @@ h1 {
   display: grid;
   grid-template-columns: 300px minmax(0, 1fr);
 }
+.main.no-data {
+  grid-template-columns: minmax(0, 1fr);
+}
 .sidebar {
   z-index: 12;
   overflow: auto;
