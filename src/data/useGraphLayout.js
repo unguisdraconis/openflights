@@ -69,5 +69,5 @@ export function useGraphLayout(data, positions, onReady) {
       cancelIdle(idleId);
       simulation.stop();
     };
-  }, [data, onReady]);
+  }, [data, positions, onReady]);
 }
