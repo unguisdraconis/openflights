@@ -1,14 +1,12 @@
 # OpenFlights 3D Network
 
-OpenFlights 3D Network is an interactive portfolio visualization of a historical airport-route dataset. It lets portfolio reviewers and other readers explore the same network geographically on a 3D globe and structurally as a force-directed graph. It is not a live aviation service, flight tracker, schedule, or source of current route intelligence.
+OpenFlights 3D Network is an interactive portfolio visualization of a historical airport-route dataset. It is not a live aviation service, flight tracker, schedule, or source of current route intelligence. It is an experiment testing the scalability and performance of D3 based visualizations as a proof-of-concept.
 
-**Published project URL:** [https://unguisdraconis.github.io/openflights/](https://unguisdraconis.github.io/openflights/)
+**Project URL:** [https://unguisdraconis.github.io/openflights/](https://unguisdraconis.github.io/openflights/)
 
-The repository is configured to deploy to that GitHub Pages URL. Its current availability has not been independently verified as part of this documentation-only update.
+## Project features
 
-## What the project demonstrates
-
-- A React and Vite interface around an imperative Three.js scene.
+- A React and Vite interface around an interactive 3D globe rendered with Three.js .
 - D3-based CSV parsing, aggregation, and force-directed layout.
 - Index-aligned typed arrays for geographic and topology positions.
 - Custom shaders for airport sprites, atmosphere, GPU picking, and light-theme terrain relief.
@@ -16,9 +14,8 @@ The repository is configured to deploy to that GitHub Pages URL. Its current ava
 - Two coordinated views: a geographic globe and a force-directed topology view.
 - Search, camera orbit and zoom, airport selection, route-density and hub-degree controls, domestic/international scope, country filtering, theme switching, and optional globe rotation.
 - Keyboard shortcuts, live-region updates, visible focus styles, reduced-motion handling, and labelled controls.
-- A GitHub Actions workflow configured for GitHub Pages.
 
-These are project-specific implementation choices, not claims of production operation, current aviation coverage, accessibility conformance, or broad expertise beyond the evidence in this repository.
+These are project-specific implementation choices.
 
 ## How it works
 
@@ -51,18 +48,18 @@ The render loop samples frame times and can lower the renderer's pixel ratio aft
 
 ## Architecture
 
-| Area | Important files | Responsibility |
-| --- | --- | --- |
-| Application state | `src/App.jsx` | Loading state, filters, selection, view/theme state, global shortcuts, and UI/scene coordination |
-| Data acquisition | `src/data/source.js` | Base-aware bundled data loading, pinned upstream fallback, timeout handling, and source selection |
-| Data model | `src/data/parse.js` | Parsing, identifier indexes, endpoint resolution, deduplication, counts, degree, score, and country aggregation |
-| Coordinates and layout | `src/data/geometry.js`, `src/data/positions.js`, `src/data/useGraphLayout.js` | Globe projection, route arcs, position tables, and force layout |
-| Scene composition | `src/scene/GlobeScene.jsx` | Camera, renderer, controls, scene lifecycle, adaptive pixel ratio, and React integration |
-| Visual layers | `src/scene/createGlobe.js`, `src/scene/terrainMaterial.js`, `src/scene/borders.js`, `src/scene/nodeSprites.js`, `src/scene/routeLines.js` | Globe, terrain shader, borders, airport sprites, and context/focus route geometry |
-| Picking | `src/scene/picking.js` | Depth-aware offscreen GPU airport picking |
-| Interface | `src/ui/*`, `src/App.css`, `src/theme.js` | Controls, search, loading fallback, tooltips, responsive styling, themes, focus, and reduced-motion styles |
-| Static assets | `public/airports.dat`, `public/routes.dat`, `public/geo/*` | Bundled network data, country geometry, and packed terrain/mask texture |
-| Build and deployment | `vite.config.js`, `.github/workflows/deploy.yml` | `/openflights/` production base path and GitHub Pages workflow |
+| Area                   | Important files                                                                                                                           | Responsibility                                                                                                  |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| Application state      | `src/App.jsx`                                                                                                                             | Loading state, filters, selection, view/theme state, global shortcuts, and UI/scene coordination                |
+| Data acquisition       | `src/data/source.js`                                                                                                                      | Base-aware bundled data loading, pinned upstream fallback, timeout handling, and source selection               |
+| Data model             | `src/data/parse.js`                                                                                                                       | Parsing, identifier indexes, endpoint resolution, deduplication, counts, degree, score, and country aggregation |
+| Coordinates and layout | `src/data/geometry.js`, `src/data/positions.js`, `src/data/useGraphLayout.js`                                                             | Globe projection, route arcs, position tables, and force layout                                                 |
+| Scene composition      | `src/scene/GlobeScene.jsx`                                                                                                                | Camera, renderer, controls, scene lifecycle, adaptive pixel ratio, and React integration                        |
+| Visual layers          | `src/scene/createGlobe.js`, `src/scene/terrainMaterial.js`, `src/scene/borders.js`, `src/scene/nodeSprites.js`, `src/scene/routeLines.js` | Globe, terrain shader, borders, airport sprites, and context/focus route geometry                               |
+| Picking                | `src/scene/picking.js`                                                                                                                    | Depth-aware offscreen GPU airport picking                                                                       |
+| Interface              | `src/ui/*`, `src/App.css`, `src/theme.js`                                                                                                 | Controls, search, loading fallback, tooltips, responsive styling, themes, focus, and reduced-motion styles      |
+| Static assets          | `public/airports.dat`, `public/routes.dat`, `public/geo/*`                                                                                | Bundled network data, country geometry, and packed terrain/mask texture                                         |
+| Build and deployment   | `vite.config.js`, `.github/workflows/deploy.yml`                                                                                          | `/openflights/` production base path and GitHub Pages workflow                                                  |
 
 ## Data sources, provenance, and licensing
 
@@ -76,7 +73,7 @@ The application prefers the copies committed under `public/` and has a network f
 
 ### Terrain relief
 
-The packed terrain texture uses elevation from NASA's SRTM + RAMP II + GTOPO30 composite, distributed as [SRTM RAMP2 topography](https://neo.gsfc.nasa.gov/view.php?datasetId=SRTM_RAMP2_TOPO). The source has no ocean bathymetry for this use; the shader colors water separately.
+The packed terrain texture uses elevation from NASA's SRTM + RAMP II + GTOPO30 composite, distributed as [SRTM RAMP2 topography](https://neo.gsfc.nasa.gov/view.php?datasetId=SRTM_RAMP2_TOPO). This project does not use bathymetry, and the shader colors water separately.
 
 The texture's land/water channel was derived from Natural Earth land geometry delivered through `world-atlas`, with separately obtained Natural Earth lake polygons removed. The repository contains the resulting texture, but not the generator, original source files, or enough metadata to reproduce it independently.
 
