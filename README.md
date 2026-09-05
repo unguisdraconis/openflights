@@ -106,7 +106,7 @@ These are implemented behaviors, not a WCAG conformance claim. Manual keyboard, 
 
 ## Local setup
 
-The existing lockfile is intended for reproducible npm installation. The locked Vite version requires Node.js `^20.19.0 || >=22.12.0`; this is narrower than the current `package.json` declaration of Node.js `>=18`.
+The supported project runtime is Node.js 24.12 or later within the Node 24 release line. The repository was validated locally with Node.js 24.14.0 and npm 11.9.0 for a clean `npm ci`, production build, development-server startup, and production-preview startup. That runtime validation did not include manual browser verification of rendered interactions, WebGL behavior, accessibility, or complete application functionality.
 
 ```bash
 npm ci
@@ -126,7 +126,7 @@ The repository currently has no lint, automated test, type-check, accessibility-
 
 ## Deployment configuration
 
-`.github/workflows/deploy.yml` is configured to run on pushes to `master` or by manual dispatch. It checks out the repository, uses Node.js 20, runs `npm ci` and `npm run build`, uploads `dist`, and deploys that artifact with GitHub Pages Actions. `vite.config.js` sets the production base to `/openflights/`.
+`.github/workflows/deploy.yml` is configured to run on pushes to `master` or by manual dispatch. It checks out the repository, uses Node.js 24, runs `npm ci` and `npm run build`, uploads `dist`, and deploys that artifact with GitHub Pages Actions. `vite.config.js` sets the production base to `/openflights/`.
 
 The separate `npm run deploy` script builds and publishes `dist` with `gh-pages`; the repository does not document which path should be treated as canonical. No deployment was run for this README update.
 
@@ -137,7 +137,6 @@ The separate `npm run deploy` script builds and publishes `dist` with `gh-pages`
 - The in-app phrase “Global aviation intelligence” can imply currency that the historical dataset does not provide and should be aligned in a later UI-copy change.
 - The accessibility behaviors above require manual verification, and the known keyboard, focus, semantics, mobile-drawer, and non-color communication gaps remain open.
 - No automated lint, test, type-check, accessibility, or link-check safeguards are configured.
-- The Node.js engine declaration does not match the locked Vite requirement.
 - The GitHub Actions and `gh-pages` deployment paths have not been consolidated or documented as alternatives.
 - Terrain creation is not fully reproducible from repository contents because the source inputs and generation process are not included.
 - A README screenshot with meaningful alternative text is not currently present.
