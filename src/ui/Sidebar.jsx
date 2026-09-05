@@ -23,6 +23,12 @@ export function Sidebar({
       .sort((a, b) => b.degree - a.degree)
       .slice(0, 8);
   }, [data, query]);
+  const normalizedQuery = query.trim();
+  const resultStatus = !normalizedQuery
+    ? ""
+    : results.length === 0
+      ? "No matching airports."
+      : `${results.length} airport result${results.length === 1 ? "" : "s"} shown.`;
   const [aboutOpen, setAboutOpen] = useState(false);
   return (
     <aside
@@ -47,6 +53,9 @@ export function Sidebar({
             autoComplete="off"
           />
           <span className="search-icon">⌕</span>
+        </div>
+        <div className="sr-only" role="status" aria-atomic="true">
+          {resultStatus}
         </div>
         {results.length > 0 && (
           <div className="results">
