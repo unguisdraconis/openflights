@@ -49,12 +49,11 @@ export function Sidebar({
           <span className="search-icon">⌕</span>
         </div>
         {results.length > 0 && (
-          <div className="results" role="listbox">
+          <div className="results">
             {results.map((n) => (
               <button
                 key={n.id}
                 className="result-btn"
-                role="option"
                 onClick={() => {
                   selectNode(n, undefined, true);
                   setQuery("");
