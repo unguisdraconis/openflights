@@ -111,6 +111,7 @@ The supported project runtime is Node.js 24.12 or later within the Node 24 relea
 ```bash
 npm ci
 npm run lint
+npm test
 npm run dev
 ```
 
@@ -123,7 +124,7 @@ npm run build
 npm run preview
 ```
 
-Reproducible linting is configured through `npm run lint`. The repository currently has no automated test, type-check, accessibility-test, or broken-link-check script.
+Reproducible linting is configured through `npm run lint`. Deterministic unit tests for core data parsing, geometry, and position-table behavior run with Node's built-in test runner via `npm test`. The repository does not yet have automated component, browser, accessibility, or end-to-end tests. No automated type-check or broken-link-check script is configured.
 
 ## Deployment configuration
 
@@ -137,7 +138,7 @@ The separate `npm run deploy` script builds and publishes `dist` with `gh-pages`
 - The force simulation runs on the main thread; idle scheduling does not eliminate long individual ticks.
 - The in-app phrase “Global aviation intelligence” can imply currency that the historical dataset does not provide and should be aligned in a later UI-copy change.
 - The accessibility behaviors above require manual verification, and the known keyboard, focus, semantics, mobile-drawer, and non-color communication gaps remain open.
-- No automated test, type-check, accessibility-test, or broken-link-check safeguards are configured.
+- Automated tests currently cover only deterministic core data parsing, geometry, and position-table behavior; component, browser, accessibility, and end-to-end tests are not configured. No automated type-check or broken-link-check safeguards are configured.
 - The GitHub Actions and `gh-pages` deployment paths have not been consolidated or documented as alternatives.
 - Terrain creation is not fully reproducible from repository contents because the source inputs and generation process are not included.
 - A README screenshot with meaningful alternative text is not currently present.
