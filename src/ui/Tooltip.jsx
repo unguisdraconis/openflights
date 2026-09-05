@@ -14,8 +14,6 @@ export function Tooltip({ node, pinned, point }) {
     <div
       className={`tooltip ${pinned ? "pinned" : ""}`}
       style={{ left, top }}
-      role={pinned ? undefined : "status"}
-      aria-label={pinned ? undefined : `${node.name} airport details`}
     >
       <div className="tooltip-top">
         <div className="airport-code">{node.iata || node.icao || "—"}</div>
