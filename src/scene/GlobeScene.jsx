@@ -90,6 +90,10 @@ export function GlobeScene({
     renderer.domElement.tabIndex = 0;
     renderer.domElement.setAttribute("role", "img");
     renderer.domElement.setAttribute(
+      "aria-describedby",
+      "canvas-keyboard-instructions",
+    );
+    renderer.domElement.setAttribute(
       "aria-label",
       `Interactive 3D flight network with ${fmt.format(data.nodes.length)} airports and ${fmt.format(data.links.length)} connections`,
     );
@@ -296,5 +300,13 @@ export function GlobeScene({
   useEffect(() => {
     apiRef.current?.resize();
   }, [sidebarOpen]);
-  return <div ref={hostRef} className="canvas-host"></div>;
+  return (
+    <>
+      <div ref={hostRef} className="canvas-host"></div>
+      <p id="canvas-keyboard-instructions" className="sr-only">
+        To select an airport with the keyboard, press slash and use Search
+        airports. Press R to reset the camera or Escape to clear the selection.
+      </p>
+    </>
+  );
 }

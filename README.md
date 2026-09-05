@@ -96,13 +96,14 @@ Repository evidence shows:
 
 - A skip link to the controls and visible `:focus-visible` styles for buttons, inputs, selects, and the canvas.
 - Native buttons, inputs, and selects with labels, plus `aria-pressed` and `aria-expanded` state on relevant controls.
-- A focusable canvas with `role="img"` and a dataset-derived accessible label.
+- A focusable canvas with `role="img"`, a dataset-derived accessible label, and a separate keyboard description. Individual GPU-rendered airport marks are not direct tab stops; `/` moves keyboard users to Search airports, where native result buttons select an airport.
+- Search and pointer selection share the same camera-focus path, including reactive reduced-motion behavior.
 - Polite status/live-region updates for topology-layout progress, airport-search results, and current airport details.
 - Global shortcuts: `/` focuses airport search, `Esc` clears airport selection, and `R` resets the camera. `/` and `R` yield to focused interactive/editable controls and browser-modified shortcut contexts.
 - CSS motion reduction and reactive JavaScript handling for `prefers-reduced-motion: reduce`. Automatic globe rotation is suspended while reduced motion is active without changing the user's auto-rotate preference, and resumes when reduced motion is removed if that preference remains enabled.
 - Selected-route emphasis that supplements color with opacity, draw order, and, on the globe, a small elevation offset.
 
-These are implemented behaviors, not a WCAG conformance claim. Manual keyboard, screen-reader, zoom/reflow, contrast, pointer, and reduced-motion testing is still required. Remaining follow-up areas include an equivalent keyboard path for airport selection on the canvas and ensuring domestic/international route meaning is not communicated by color alone.
+These are implemented behaviors, not a WCAG conformance claim. Manual keyboard, screen-reader, zoom/reflow, contrast, pointer, and reduced-motion testing is still required. Remaining follow-up areas include direct structured airport exploration from the canvas and ensuring domestic/international route meaning is not communicated by color alone.
 
 ## Local setup
 
