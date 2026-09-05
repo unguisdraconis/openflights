@@ -21,10 +21,6 @@ export const GLOBE_RADIUS = 1;
 // too low and whole regions of the map read as empty, which is what a
 // hemisphere of low-degree airports looks like under a hub-degree filter.
 export const DIMMED_ALPHA = 0.25;
-export const reducedMotion =
-  typeof window !== "undefined" && typeof window.matchMedia === "function"
-    ? window.matchMedia("(prefers-reduced-motion: reduce)").matches
-    : false;
 export const idle =
   typeof window !== "undefined" && window.requestIdleCallback
     ? window.requestIdleCallback.bind(window)

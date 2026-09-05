@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useRef } from "react";
 import * as d3 from "d3";
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
-import { fmt, reducedMotion } from "../constants.js";
+import { fmt } from "../constants.js";
 import { createGlobe } from "./createGlobe.js";
 import { createNodeSprites } from "./nodeSprites.js";
 import { createRouteLines } from "./routeLines.js";
@@ -49,6 +49,7 @@ export function GlobeScene({
   const selectedRef = useRef(selected);
   const callbacksRef = useRef({ onHover, onSelect, onClear });
   const optionsRef = useRef(options);
+  const reducedMotionRef = useRef(false);
   useLayoutEffect(() => {
     selectedRef.current = selected;
   }, [selected]);
@@ -62,6 +63,10 @@ export function GlobeScene({
   useEffect(() => {
     const host = hostRef.current;
     if (!host || !data) return;
+    const reducedMotionQuery = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    );
+    reducedMotionRef.current = reducedMotionQuery.matches;
     let disposed = false,
       raf = 0,
       lastFrame = performance.now(),
@@ -138,11 +143,17 @@ export function GlobeScene({
     const focusNode = (node) => {
       const v = positions.read(currentView, node.index, new THREE.Vector3());
       if (currentView === "globe") {
-        const end = v.clone().normalize().multiplyScalar(2.35),
-          start = camera.position.clone(),
+        const end = v.clone().normalize().multiplyScalar(2.35);
+        if (reducedMotionRef.current) {
+          camera.position.copy(end);
+          controls.target.copy(v).multiplyScalar(0.18);
+          controls.update();
+          return;
+        }
+        const start = camera.position.clone(),
           targetStart = controls.target.clone(),
           t0 = performance.now(),
-          dur = reducedMotion ? 1 : 650;
+          dur = 650;
         const fly = (now) => {
           const t = Math.min(1, (now - t0) / dur),
             q = 1 - Math.pow(1 - t, 3);
@@ -175,12 +186,18 @@ export function GlobeScene({
       borders.object.visible = !!palette.borders && currentView === "globe";
     };
 
+    const syncAutoRotation = (opts = optionsRef.current) => {
+      controls.autoRotate =
+        opts.autoRotate &&
+        !reducedMotionRef.current &&
+        currentView === "globe";
+    };
+
     const update = (opts, selectedNode) => {
       currentView = opts.view;
       palette = themeFor(opts.theme);
       applyTheme();
-      controls.autoRotate =
-        opts.autoRotate && !reducedMotion && opts.view === "globe";
+      syncAutoRotation(opts);
       const heroNode = selectedNode || sprites.topHubNode;
       sprites.update(opts, selectedNode, heroNode, palette);
       routes.update(opts, selectedNode, palette);
@@ -198,6 +215,11 @@ export function GlobeScene({
       renderer.setSize(w, h, false);
       sprites.resize();
     };
+    const onReducedMotionChange = (event) => {
+      reducedMotionRef.current = event.matches;
+      syncAutoRotation();
+    };
+    reducedMotionQuery.addEventListener("change", onReducedMotionChange);
     // Declared before the handle is published: `resize` is a const, so
     // referencing it any earlier would hit the temporal dead zone.
     apiRef.current = { update, focusNode, resetCamera, resize };
@@ -244,6 +266,7 @@ export function GlobeScene({
       disposed = true;
       cancelAnimationFrame(raf);
       ro.disconnect();
+      reducedMotionQuery.removeEventListener("change", onReducedMotionChange);
       window.removeEventListener("keydown", key);
       picking.dispose();
       borders.dispose();

@@ -42,7 +42,7 @@ Geographic positions are projected from latitude and longitude onto a unit spher
 
 The Three.js scene is created once per loaded dataset outside React's render cycle. Airport positions and visual attributes use shared buffer geometry and mutable attributes. Route buffers are rebuilt when filters or selection change and are rendered as a context object plus, when applicable, a separate selected-airport focus object. Focused routes use opacity, draw order, and a small globe-view lift in addition to color.
 
-Pointer selection uses an offscreen GPU ID pass rather than raycasting or a D3 quadtree. The globe participates in the depth pass so far-side airports are occluded, and pointer sampling is limited to one requested animation frame at a time. Selecting an airport updates React state and, in globe view, requests an eased camera move unless reduced motion was detected at startup.
+Pointer selection uses an offscreen GPU ID pass rather than raycasting or a D3 quadtree. The globe participates in the depth pass so far-side airports are occluded, and pointer sampling is limited to one requested animation frame at a time. Selecting an airport updates React state and, in globe view, normally requests a 650 ms eased camera move. The reduced-motion preference is observed reactively during the session: airport focus still occurs, but the camera repositions immediately instead of using animated travel. Manual orbit and zoom remain available. Preference changes affect future focus actions without requiring a reload and do not cancel a camera flight that is already running.
 
 The render loop samples frame times and can lower the renderer's pixel ratio after sustained slower frames. Scene teardown cancels the primary render frame, disconnects the resize observer, removes registered interaction listeners, and disposes the scene resources owned by the main scene modules. This is deliberately narrower than claiming that every possible asynchronous resource is cancelled or disposed.
 
@@ -97,12 +97,12 @@ Repository evidence shows:
 - A skip link to the controls and visible `:focus-visible` styles for buttons, inputs, selects, and the canvas.
 - Native buttons, inputs, and selects with labels, plus `aria-pressed` and `aria-expanded` state on relevant controls.
 - A focusable canvas with `role="img"` and a dataset-derived accessible label.
-- Polite live regions for topology-layout status and the current airport details.
-- Global shortcuts: `/` focuses airport search, `Esc` clears selection, and `R` resets the camera. `/` and `R` are suppressed while an `input` element has focus.
-- CSS motion reduction and startup-time JavaScript detection that disables camera-fly easing and automatic rotation when `prefers-reduced-motion: reduce` is active.
+- Polite status/live-region updates for topology-layout progress, airport-search results, and current airport details.
+- Global shortcuts: `/` focuses airport search, `Esc` clears airport selection, and `R` resets the camera. `/` and `R` yield to focused interactive/editable controls and browser-modified shortcut contexts.
+- CSS motion reduction and reactive JavaScript handling for `prefers-reduced-motion: reduce`. Automatic globe rotation is suspended while reduced motion is active without changing the user's auto-rotate preference, and resumes when reduced motion is removed if that preference remains enabled.
 - Selected-route emphasis that supplements color with opacity, draw order, and, on the globe, a small elevation offset.
 
-These are implemented behaviors, not a WCAG conformance claim. Manual keyboard, screen-reader, zoom/reflow, contrast, pointer, and reduced-motion testing is still required. Known follow-up areas include an equivalent keyboard path for airport selection on the canvas, focus management for pinned airport details, complete combobox/listbox semantics for search, preventing visually closed mobile controls from remaining reachable, and ensuring domestic/international route meaning is not communicated by color alone.
+These are implemented behaviors, not a WCAG conformance claim. Manual keyboard, screen-reader, zoom/reflow, contrast, pointer, and reduced-motion testing is still required. Remaining follow-up areas include an equivalent keyboard path for airport selection on the canvas and ensuring domestic/international route meaning is not communicated by color alone.
 
 ## Local setup
 
