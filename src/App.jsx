@@ -249,7 +249,7 @@ function App() {
     };
     skipLink.addEventListener("click", onActivate);
     return () => skipLink.removeEventListener("click", onActivate);
-  }, [controlsVisible]);
+  }, [controlsVisible, data]);
   useLayoutEffect(() => {
     if (controlsVisible && focusSearchAfterOpenRef.current) {
       focusSearchAfterOpenRef.current = false;
@@ -336,8 +336,13 @@ function App() {
   );
   return (
     <div className="app">
+      {data && (
+        <a id="skip-to-controls" className="skip-link" href="#controls">
+          Skip to controls
+        </a>
+      )}
       <header className="topbar">
-        {!isDesktopViewport && (
+        {data && !isDesktopViewport && (
           <button
             ref={sidebarToggleRef}
             className="icon-btn menu-btn"
@@ -364,18 +369,20 @@ function App() {
             <Stat value={fmt.format(data.countries.length)} label="Countries" />
           </div>
         )}
-        <div className="top-actions">
-          <button
-            className="icon-btn desktop-only"
-            onClick={() =>
-              setOptions((o) => ({ ...o, autoRotate: !o.autoRotate }))
-            }
-            aria-label="Toggle automatic rotation"
-            aria-pressed={options.autoRotate}
-          >
-            ◌
-          </button>
-        </div>
+        {data && (
+          <div className="top-actions">
+            <button
+              className="icon-btn desktop-only"
+              onClick={() =>
+                setOptions((o) => ({ ...o, autoRotate: !o.autoRotate }))
+              }
+              aria-label="Toggle automatic rotation"
+              aria-pressed={options.autoRotate}
+            >
+              ◌
+            </button>
+          </div>
+        )}
       </header>
       <main className="main">
         {data && (
