@@ -10,12 +10,12 @@ export function Sidebar({
   selected,
   selectNode,
   clearSelection,
+  restoreSearchFocusRef,
   isDesktopViewport,
   open,
   inert,
 }) {
   const searchInputRef = useRef(null);
-  const restoreSearchFocusRef = useRef(false);
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return [];
@@ -37,8 +37,8 @@ export function Sidebar({
   useLayoutEffect(() => {
     if (!restoreSearchFocusRef.current) return;
     restoreSearchFocusRef.current = false;
-    if (isDesktopViewport) searchInputRef.current?.focus();
-  }, [isDesktopViewport, query, selected]);
+    searchInputRef.current?.focus();
+  }, [isDesktopViewport, query, restoreSearchFocusRef, selected]);
 
   return (
     <aside
@@ -97,9 +97,10 @@ export function Sidebar({
               </span>
             </div>
             <button
+              id="clear-selected-airport"
               className="clear-btn"
               onClick={(event) => {
-                if (isDesktopViewport && event.detail === 0) {
+                if (event.detail === 0) {
                   restoreSearchFocusRef.current = true;
                 }
                 clearSelection();

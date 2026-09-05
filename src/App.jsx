@@ -96,6 +96,7 @@ function App() {
   const focusControlsAfterOpenRef = useRef(false);
   const focusSearchAfterBreakpointRef = useRef(false);
   const restoreSidebarFocusRef = useRef(false);
+  const restoreSearchFocusRef = useRef(false);
   const controlsVisible = isDesktopViewport || sidebarOpen;
   const graphReady = useCallback(() => setTopologyVersion((v) => v + 1), []);
   // Render positions live in index-aligned tables beside the graph, never on
@@ -277,6 +278,9 @@ function App() {
         !event.shiftKey &&
         !isEscapeOwnedTarget(event)
       ) {
+        if (document.activeElement?.id === "clear-selected-airport") {
+          restoreSearchFocusRef.current = true;
+        }
         setSelected(null);
         setHover(null);
         setTipPoint(null);
@@ -369,6 +373,7 @@ function App() {
             selected={selected}
             selectNode={selectNode}
             clearSelection={clearSelection}
+            restoreSearchFocusRef={restoreSearchFocusRef}
             isDesktopViewport={isDesktopViewport}
             open={controlsVisible}
             inert={!controlsVisible}
