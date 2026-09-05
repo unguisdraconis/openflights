@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef } from "react";
 import * as d3 from "d3";
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
@@ -29,7 +29,9 @@ export function GlobeScene({
   const hostRef = useRef();
   const apiRef = useRef();
   const selectedRef = useRef(selected);
-  selectedRef.current = selected;
+  useLayoutEffect(() => {
+    selectedRef.current = selected;
+  }, [selected]);
 
   useEffect(() => {
     const host = hostRef.current;
