@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { fmt } from "../constants.js";
 
 export function Sidebar({
@@ -10,9 +10,12 @@ export function Sidebar({
   selected,
   selectNode,
   clearSelection,
+  isDesktopViewport,
   open,
   inert,
 }) {
+  const searchInputRef = useRef(null);
+  const restoreSearchFocusRef = useRef(false);
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return [];
@@ -30,6 +33,13 @@ export function Sidebar({
       ? "No matching airports."
       : `${results.length} airport result${results.length === 1 ? "" : "s"} shown.`;
   const [aboutOpen, setAboutOpen] = useState(false);
+
+  useLayoutEffect(() => {
+    if (!restoreSearchFocusRef.current) return;
+    restoreSearchFocusRef.current = false;
+    if (isDesktopViewport) searchInputRef.current?.focus();
+  }, [isDesktopViewport, query, selected]);
+
   return (
     <aside
       id="controls"
@@ -44,6 +54,7 @@ export function Sidebar({
         </div>
         <div className="search-wrap">
           <input
+            ref={searchInputRef}
             id="airport-search"
             className="search"
             value={query}
@@ -63,7 +74,10 @@ export function Sidebar({
               <button
                 key={n.id}
                 className="result-btn"
-                onClick={() => {
+                onClick={(event) => {
+                  if (isDesktopViewport && event.detail === 0) {
+                    restoreSearchFocusRef.current = true;
+                  }
                   selectNode(n, undefined, true);
                   setQuery("");
                 }}
@@ -84,7 +98,12 @@ export function Sidebar({
             </div>
             <button
               className="clear-btn"
-              onClick={clearSelection}
+              onClick={(event) => {
+                if (isDesktopViewport && event.detail === 0) {
+                  restoreSearchFocusRef.current = true;
+                }
+                clearSelection();
+              }}
               aria-label="Clear selected airport"
             >
               ×

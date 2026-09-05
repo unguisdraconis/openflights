@@ -307,6 +307,7 @@ function App() {
             selected={selected}
             selectNode={selectNode}
             clearSelection={clearSelection}
+            isDesktopViewport={isDesktopViewport}
             open={sidebarOpen}
             inert={!isDesktopViewport && !sidebarOpen}
           />
