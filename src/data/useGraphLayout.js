@@ -19,7 +19,6 @@ export function useGraphLayout(data, positions, onReady) {
       y: -n.lat * 2.1,
       ref: n,
     }));
-    const byId = new Map(nodes.map((n) => [n.id, n]));
     const links = data.links.map((l) => ({
       source: l.source.numericId,
       target: l.target.numericId,

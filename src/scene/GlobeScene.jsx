@@ -76,7 +76,7 @@ export function GlobeScene({
     scene.add(sun);
 
     const viewportHeight = () => host.clientHeight || 800;
-    const world = createGlobe(scene, palette);
+    const world = createGlobe(scene);
     const borders = createBorders(scene);
     const sprites = createNodeSprites(
       scene,

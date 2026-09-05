@@ -8,7 +8,7 @@ import { createTerrainMaterial } from "./terrainMaterial.js";
 // Both themes are built up front and swapped by applyTheme, so switching is a
 // material assignment rather than a scene rebuild. The dark look is unchanged
 // from before light mode existed.
-export function createGlobe(scene, theme) {
+export function createGlobe(scene) {
   const globeGroup = new THREE.Group();
   scene.add(globeGroup);
 
