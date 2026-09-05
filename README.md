@@ -84,9 +84,11 @@ The project generates the hypsometric palette and hillshade in `src/scene/terrai
 - Land and country geometry: [Natural Earth](https://www.naturalearthdata.com/) via the [`world-atlas`](https://github.com/topojson/world-atlas) TopoJSON package. Natural Earth identifies its data as public domain; `world-atlas` is distributed under the [ISC License](https://github.com/topojson/world-atlas/blob/master/LICENSE).
 - Lake subtraction mask: Natural Earth 1:50m Physical, Lakes + Reservoirs (`ne_50m_lakes`), v5.x, obtained as direct GeoJSON. The exact minor version and retrieval date are not recorded. See the [Natural Earth 1:50m lakes page](https://www.naturalearthdata.com/downloads/50m-physical-vectors/50m-lakes-reservoirs/) and [terms of use](https://www.naturalearthdata.com/about/terms-of-use/).
 
-A consolidated record is available in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). Bundled data and third-party assets retain their original licenses, terms, or public-domain status.
+## Licensing
 
-This repository does not currently declare a project-level license for its own code and other original material. The source notices above document third-party inputs; they do not license the project as a whole or replace the cited license terms.
+Project-controlled software and associated project documentation are available under the [MIT License](LICENSE), only to the extent Jeremiah King holds or is authorized to license the applicable rights.
+
+The project-level MIT License does not supersede third-party licenses or terms. Bundled data, static assets, dependencies, Vite-derived template material, generated output, and other third-party content remain subject to their own licenses, terms, notices, or public-domain status. See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for the relevant third-party licensing and provenance record.
 
 ## Accessibility decisions and limits
 
@@ -138,7 +140,7 @@ The separate `npm run deploy` script builds and publishes `dist` with `gh-pages`
 - The Node.js engine declaration does not match the locked Vite requirement.
 - The GitHub Actions and `gh-pages` deployment paths have not been consolidated or documented as alternatives.
 - Terrain creation is not fully reproducible from repository contents because the source inputs and generation process are not included.
-- A project-level license and a README screenshot with meaningful alternative text are not currently present.
+- A README screenshot with meaningful alternative text is not currently present.
 
 ## AI assistance
 

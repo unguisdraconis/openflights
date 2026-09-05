@@ -1,6 +1,6 @@
 # Third-Party Notices
 
-This file documents third-party data and static assets redistributed with OpenFlights 3D Network. Those materials remain subject to their respective source licenses, terms, or public-domain status. Any future license for original project code or documentation will not supersede those terms.
+This file documents third-party data, static assets, and template material redistributed with OpenFlights 3D Network. Those materials remain subject to their respective source licenses, terms, or public-domain status. The project-level MIT License applies only to project-controlled material for which Jeremiah King holds or is authorized to license the applicable rights; it does not supersede the terms documented here.
 
 This is a source and notice record, not a complete restatement of every applicable term. Consult the linked source and license texts for the full terms.
 
@@ -75,6 +75,48 @@ TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF
 THIS SOFTWARE.
 ```
 
+## Vite React template material
+
+Affected files:
+
+- `.gitignore`
+- `.oxlintrc.json`
+
+A software-origin audit verified these files as exact matches to the corresponding files in the official Vite React template.
+
+Source and license:
+
+- Vite React template: <https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react>
+- Vite license: <https://github.com/vitejs/vite/blob/main/LICENSE>
+
+Vite is distributed under the MIT License. The upstream MIT status of these template files is compatible with, but is not replaced by, this project's MIT License.
+
+The Vite core MIT notice is preserved below:
+
+```text
+MIT License
+
+Copyright (c) 2019-present, VoidZero Inc. and Vite contributors
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
 ## Packed terrain texture
 
 Affected file:
@@ -94,7 +136,7 @@ Source and usage documentation:
 
 NASA's media guidelines state that NASA media content generally is not subject to copyright in the United States, while noting that third-party material may remain separately protected. NASA asks to be acknowledged as the source and prohibits use that implies NASA endorsement. NASA is acknowledged here as the source of the SRTM RAMP2 elevation lineage. This acknowledgement does not imply NASA endorsement.
 
-The repository does not establish the exact upstream raster artifact or version used, the generator and commands used to create the packed texture, the intermediate files, the exact Natural Earth lake-data minor version, or the final derived image's copyright and ownership status. No license is assigned to `public/geo/terrain-4096.png` by this notice, and it is not represented as covered by any future project code or documentation license.
+The repository does not establish the exact upstream raster artifact or version used, the generator and commands used to create the packed texture, the intermediate files, the exact Natural Earth lake-data minor version, or the final derived image's copyright and ownership status. No license is assigned to `public/geo/terrain-4096.png` by this notice, and it is not represented as covered by the project-level MIT License.
 
 ## JavaScript package dependencies
 
