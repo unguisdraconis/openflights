@@ -29,9 +29,17 @@ export function GlobeScene({
   const hostRef = useRef();
   const apiRef = useRef();
   const selectedRef = useRef(selected);
+  const callbacksRef = useRef({ onHover, onSelect, onClear });
+  const optionsRef = useRef(options);
   useLayoutEffect(() => {
     selectedRef.current = selected;
   }, [selected]);
+  useLayoutEffect(() => {
+    callbacksRef.current = { onHover, onSelect, onClear };
+  }, [onHover, onSelect, onClear]);
+  useLayoutEffect(() => {
+    optionsRef.current = options;
+  }, [options]);
 
   useEffect(() => {
     const host = hostRef.current;
@@ -42,7 +50,8 @@ export function GlobeScene({
       frameSamples = [],
       currentView = "globe";
 
-    let palette = themeFor(options.theme);
+    const initialOptions = optionsRef.current;
+    let palette = themeFor(initialOptions.theme);
     const scene = new THREE.Scene();
     scene.fog = new THREE.FogExp2(palette.fog, palette.fogDensity);
     const camera = new THREE.PerspectiveCamera(42, 1, 0.01, 100);
@@ -98,9 +107,9 @@ export function GlobeScene({
       world,
       routes,
       selectedRef,
-      onHover,
-      onSelect,
-      onClear,
+      onHover: (...args) => callbacksRef.current.onHover(...args),
+      onSelect: (...args) => callbacksRef.current.onSelect(...args),
+      onClear: (...args) => callbacksRef.current.onClear(...args),
     });
 
     const resetCamera = (view = currentView) => {
@@ -174,7 +183,7 @@ export function GlobeScene({
     // Declared before the handle is published: `resize` is a const, so
     // referencing it any earlier would hit the temporal dead zone.
     apiRef.current = { update, focusNode, resetCamera, resize };
-    update(options, selected);
+    update(initialOptions, selectedRef.current);
 
     const ro = new ResizeObserver(resize);
     ro.observe(host);
@@ -230,7 +239,7 @@ export function GlobeScene({
       renderer.domElement.remove();
       apiRef.current = null;
     };
-  }, [data]);
+  }, [data, positions]);
 
   useEffect(() => {
     apiRef.current?.update(options, selected);
