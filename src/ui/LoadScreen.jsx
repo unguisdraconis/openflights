@@ -52,7 +52,7 @@ export function LoadScreen({ onLoaded, loading, error }) {
             </button>
             <input
               ref={inputRef}
-              className="sr-only"
+              hidden
               type="file"
               multiple
               accept=".txt,.dat,text/plain"
