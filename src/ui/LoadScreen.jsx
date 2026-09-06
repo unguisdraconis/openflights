@@ -40,13 +40,12 @@ export function LoadScreen({ onLoaded, loading, error }) {
             confusing when nothing is actually wrong yet. */}
         <h2>
           {loading
-            ? "Loading the global aviation network…"
-            : "Load the global aviation network"}
+            ? "Loading historical OpenFlights route data…"
+            : "Load historical OpenFlights route data"}
         </h2>
         {loading ? (
           <p role="status" aria-live="polite">
-            Fetching and parsing the airport and route data. This usually takes
-            a few seconds.
+            Fetching and parsing the airport and route data.
           </p>
         ) : (
           <p>

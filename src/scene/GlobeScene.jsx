@@ -304,8 +304,10 @@ export function GlobeScene({
     <>
       <div ref={hostRef} className="canvas-host"></div>
       <p id="canvas-keyboard-instructions" className="sr-only">
-        To select an airport with the keyboard, press slash and use Search
-        airports. Press R to reset the camera or Escape to clear the selection.
+        This visualization uses historical OpenFlights route data last updated
+        in June 2014. To select an airport with the keyboard, press slash and
+        use Search airports. Press R to reset the camera or Escape to clear the
+        selection.
       </p>
     </>
   );

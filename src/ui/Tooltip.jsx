@@ -27,7 +27,7 @@ export function Tooltip({ node, pinned, point }) {
       <div className="tooltip-grid">
         <div className="tooltip-metric">
           <b>{fmt.format(node.degree)}</b>
-          <span>Connections</span>
+          <span>Dataset connections</span>
         </div>
         <div className="tooltip-metric">
           <b>{fmt.format(node.routeCount)}</b>

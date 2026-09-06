@@ -309,14 +309,15 @@ export function Sidebar({
             drawn here.
           </p>
           <p>
-            Useful as reference data, and as a real-world scale-free network for
+            Useful as reference data, and as a historical route network for
             graph analysis and visualisation.
           </p>
           <p>
-            <b>A historical snapshot, not a live feed.</b> Airports are current
-            to roughly 2017, with the last upstream correction in 2019. There
-            are no schedules, frequencies or fares, so it cannot tell you what
-            flies today.
+            <b>A historical snapshot, not a live feed.</b> OpenFlights route
+            updates stopped in June 2014. Airport records are roughly current
+            to 2017, with the last upstream correction in 2019. The data does
+            not establish what flies today and contains no current schedules,
+            frequencies, or fares.
           </p>
         </div>
       </footer>

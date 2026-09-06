@@ -356,16 +356,16 @@ function App() {
           </button>
         )}
         <div className="brand">
-          <div className="eyebrow">Global aviation intelligence</div>
+          <div className="eyebrow">Historical OpenFlights route network</div>
           <h1 ref={loadedHeadingRef} tabIndex={-1}>
             OpenFlights Network
           </h1>
         </div>
         {data && (
-          <div className="stats" aria-label="Network summary">
+          <div className="stats" aria-label="Historical dataset summary">
             <Stat value={fmt.format(data.nodes.length)} label="Airports" />
             <Stat value={fmt.format(data.links.length)} label="Connections" />
-            <Stat value={fmt.format(filteredCount)} label="Visible pool" />
+            <Stat value={fmt.format(filteredCount)} label="Eligible connections" />
             <Stat value={fmt.format(data.countries.length)} label="Countries" />
           </div>
         )}
@@ -444,7 +444,7 @@ function App() {
           </div>
           <div className="sr-only" aria-live="polite">
             {tooltipNode
-              ? `${tooltipNode.name}, ${tooltipNode.city}, ${tooltipNode.country}. ${tooltipNode.degree} direct connections.`
+              ? `${tooltipNode.name}, ${tooltipNode.city}, ${tooltipNode.country}. ${tooltipNode.degree} connections in this dataset.`
               : ""}
           </div>
         </section>
