@@ -1,21 +1,23 @@
 # OpenFlights 3D Network
 
-OpenFlights 3D Network is an interactive portfolio visualization of a historical airport-route dataset. It is not a live aviation service, flight tracker, schedule, or source of current route intelligence.
+OpenFlights 3D Network is an interactive portfolio visualization for exploring a historical airport-route network through coordinated geographic and force-directed views, airport search, route filtering, and connection inspection. It uses historical OpenFlights data and is not a live aviation service, flight tracker, schedule, or source of current route intelligence.
 
-**Project URL:** [https://unguisdraconis.github.io/openflights/](https://unguisdraconis.github.io/openflights/)
+**Live demo:** [https://unguisdraconis.github.io/openflights/](https://unguisdraconis.github.io/openflights/)
 
 ![Interactive OpenFlights historical route network shown as a 3D globe with network controls and selected route connections.](docs/images/openflights-network-overview.png)
 
+This portfolio project was directed, tested, and iteratively refined by Jeremiah King, with substantial AI-assisted implementation documented below. The repository reflects his decisions about data framing, interaction design, accessibility, provenance, testing, and final technical judgment.
+
 ## Project features
 
-- A React and Vite interface around an interactive 3D globe rendered with Three.js .
-- D3-based CSV parsing, aggregation, and force-directed layout.
-- Index-aligned typed arrays for geographic and topology positions.
-- Custom shaders for airport sprites, atmosphere, GPU picking, and light-theme terrain relief.
-- Data indexing, undirected route deduplication, route weighting, filtering, and airport selection.
-- Two coordinated views: a geographic globe and a force-directed topology view.
-- Search, camera orbit and zoom, airport selection, route-density and hub-degree controls, domestic/international scope, country filtering, theme switching, and optional globe rotation.
-- Keyboard shortcuts, live-region updates, visible focus styles, reduced-motion handling, and labelled controls.
+- Two coordinated views: an interactive 3D geographic globe and a force-directed topology view.
+- Airport search and selection, camera orbit and zoom, route-density and hub-degree controls, domestic/international scope, country focus, theme switching, and optional globe rotation.
+- Depth-aware GPU airport picking and selected-route emphasis through opacity, draw order, and a small globe-view lift.
+- Solid domestic routes and dashed international routes, with color retained as a secondary category cue.
+- D3-based CSV parsing, identifier indexing, aggregation, undirected route deduplication, route weighting, filtering, and force-directed layout.
+- Index-aligned typed arrays for geographic and topology positions, buffer-based route rendering, and custom shaders for airport sprites, atmosphere, and light-theme terrain relief.
+- Responsive controls, keyboard shortcuts, live-region updates, visible focus styles, reduced-motion handling, and labelled controls.
+- A React and Vite interface using Three.js for 3D rendering and D3 for data processing and layout.
 
 These are project-specific implementation choices.
 
@@ -42,7 +44,7 @@ The resulting network describes records in the historical source data. A route r
 
 Geographic positions are projected from latitude and longitude onto a unit sphere. The topology view uses a stopped D3 force simulation that is advanced manually for up to 85 ticks, then rescales the result into a fixed viewport and adds a small degree-based z offset. The work is scheduled in idle batches but still runs on the main thread; this scheduling does not guarantee that an individual simulation tick is non-blocking.
 
-The Three.js scene is created once per loaded dataset outside React's render cycle. Airport positions and visual attributes use shared buffer geometry and mutable attributes. Route buffers are rebuilt when filters or selection change and are rendered as a context object plus, when applicable, a separate selected-airport focus object. Focused routes use opacity, draw order, and a small globe-view lift in addition to color.
+The Three.js scene is created once per loaded dataset outside React's render cycle. React manages application and interface state, while the long-lived Three.js scene is updated imperatively so ordinary state changes do not reconstruct the renderer, camera, controls, and scene resources. Airport positions and visual attributes use shared buffer geometry and mutable attributes. Route buffers are rebuilt when filters or selection change and are rendered as a context object plus, when applicable, a separate selected-airport focus object. Focused routes use opacity, draw order, and a small globe-view lift in addition to color.
 
 Pointer selection uses an offscreen GPU ID pass rather than raycasting or a D3 quadtree. The globe participates in the depth pass so far-side airports are occluded, and pointer sampling is limited to one requested animation frame at a time. Selecting an airport updates React state and, in globe view, normally requests a 650 ms eased camera move. The reduced-motion preference is observed reactively during the session: airport focus still occurs, but the camera repositions immediately instead of using animated travel. Manual orbit and zoom remain available. Preference changes affect future focus actions without requiring a reload and do not cancel a camera flight that is already running.
 
@@ -65,7 +67,7 @@ The render loop samples frame times and can lower the renderer's pixel ratio aft
 
 ### Performance
 
-The bundle is intentionally substantial, and the production build currently reports Vite's advisory for a JavaScript chunk larger than 500 kB. This is an accepted tradeoff for an interactive visualization built with React, Three.js, and D3, rather than an optimization target in itself. The implementation emphasizes low-cost runtime behavior through shared buffer geometry, GPU-based picking, bounded route rendering, adaptive pixel ratio, and preservation of long-lived scene resources.
+The bundle is intentionally substantial, and the production build currently reports Vite's advisory for a JavaScript chunk larger than 500 kB. This is an accepted tradeoff for an interactive visualization built with React, Three.js, and D3, rather than an optimization target in itself. The implementation is designed to reduce repeated per-frame CPU work and allocation through shared buffer geometry, GPU-based picking, bounded route rendering, adaptive pixel ratio, and preservation of long-lived scene resources.
 
 ## Data sources, provenance, and licensing
 
