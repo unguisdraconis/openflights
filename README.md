@@ -59,7 +59,7 @@ The render loop samples frame times and can lower the renderer's pixel ratio aft
 | Picking                | `src/scene/picking.js`                                                                                                                    | Depth-aware offscreen GPU airport picking                                                                       |
 | Interface              | `src/ui/*`, `src/App.css`, `src/theme.js`                                                                                                 | Controls, search, loading fallback, tooltips, responsive styling, themes, focus, and reduced-motion styles      |
 | Static assets          | `public/airports.dat`, `public/routes.dat`, `public/geo/*`                                                                                | Bundled network data, country geometry, and packed terrain/mask texture                                         |
-| Build and deployment   | `vite.config.js`, `.github/workflows/deploy.yml`                                                                                          | `/openflights/` production base path and GitHub Pages workflow                                                  |
+| Build and deployment   | `vite.config.js`, `package.json`, `.github/workflows/ci.yml`                                                                               | `/openflights/` production base path, validation-only CI, and manual `gh-pages` publication                     |
 
 ## Data sources, provenance, and licensing
 
@@ -127,20 +127,33 @@ npm run preview
 
 Reproducible linting is configured through `npm run lint`. Deterministic unit tests for core data parsing, geometry, and position-table behavior run with Node's built-in test runner via `npm test`. The repository does not yet have automated component, browser, accessibility, or end-to-end tests. No automated type-check or broken-link-check script is configured.
 
-## Deployment configuration
+## Continuous integration and deployment
 
-`.github/workflows/deploy.yml` is configured to run on pushes to `master` or by manual dispatch. It checks out the repository, uses Node.js 24, runs `npm ci` and `npm run build`, uploads `dist`, and deploys that artifact with GitHub Pages Actions. `vite.config.js` sets the production base to `/openflights/`.
+GitHub Actions validates commits. Publishing is manual through `npm run deploy`.
 
-The separate `npm run deploy` script builds and publishes `dist` with `gh-pages`; the repository does not document which path should be treated as canonical. No deployment was run for this README update.
+`.github/workflows/ci.yml` runs on pull requests targeting `master`, pushes to `master`, and manual dispatch. Its `Validate` job checks out the repository, uses Node.js 24 with npm caching, runs `npm ci`, lint, tests, and a production build. GitHub Actions does not deploy the site or upload a Pages artifact. `Validate` is a suitable required status check if branch protection is configured; this repository does not establish whether branch protection is currently enabled.
+
+Before publishing, the operator should confirm that the working tree is clean, local `master` is current with the intended remote state, and the relevant CI validation passed:
+
+```bash
+git switch master
+git status --short
+npm ci
+npm run deploy
+```
+
+The npm lifecycle runs `predeploy` automatically before `deploy`. Here, `predeploy` runs `npm run validate`, which runs lint, tests, and the production build exactly once; `deploy` then publishes the resulting `dist` directory to the `gh-pages` branch. A lint, test, or build failure prevents publication, while a `gh-pages` failure is reported after successful local validation.
+
+This local gate does not verify that the current branch is `master`, that the working tree is clean, that local `master` matches `origin/master`, or that GitHub CI is green. Those remain operator release-policy checks.
+
+In the GitHub repository UI, Pages should be configured with **Source: Deploy from a branch**, **Branch: `gh-pages`**, and **Folder: `/ (root)`**. These settings are external to the repository and have not been independently verified here. `vite.config.js` retains the `/openflights/` production base path.
 
 ## Limitations and next steps
 
 - The airport and route records are historical and are unsuitable for navigation, booking, schedules, operational decisions, or claims about today's network.
 - The force simulation runs on the main thread; idle scheduling does not eliminate long individual ticks.
-- The in-app phrase “Global aviation intelligence” can imply currency that the historical dataset does not provide and should be aligned in a later UI-copy change.
-- The accessibility behaviors above require manual verification, and the known keyboard, focus, semantics, mobile-drawer, and non-color communication gaps remain open.
+- Accessibility work has addressed the repository's source-backed keyboard, focus, semantics, mobile-drawer, reduced-motion, non-color, and contrast issues. Broader assistive-technology, forced-colors, zoom/reflow, touch, and cross-browser validation remains outstanding.
 - Automated tests currently cover only deterministic core data parsing, geometry, and position-table behavior; component, browser, accessibility, and end-to-end tests are not configured. No automated type-check or broken-link-check safeguards are configured.
-- The GitHub Actions and `gh-pages` deployment paths have not been consolidated or documented as alternatives.
 - Terrain creation is not fully reproducible from repository contents because the source inputs and generation process are not included.
 - A README screenshot with meaningful alternative text is not currently present.
 

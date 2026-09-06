@@ -8,7 +8,9 @@
     "build": "vite build",
     "lint": "oxlint",
     "test": "node --test",
-    "deploy": "vite build && gh-pages -d dist",
+    "validate": "npm run lint && npm test && npm run build",
+    "predeploy": "npm run validate",
+    "deploy": "gh-pages -d dist",
     "preview": "vite preview"
   },
   "dependencies": {
