@@ -59,7 +59,11 @@ The render loop samples frame times and can lower the renderer's pixel ratio aft
 | Picking                | `src/scene/picking.js`                                                                                                                    | Depth-aware offscreen GPU airport picking                                                                       |
 | Interface              | `src/ui/*`, `src/App.css`, `src/theme.js`                                                                                                 | Controls, search, loading fallback, tooltips, responsive styling, themes, focus, and reduced-motion styles      |
 | Static assets          | `public/airports.dat`, `public/routes.dat`, `public/geo/*`                                                                                | Bundled network data, country geometry, and packed terrain/mask texture                                         |
-| Build and deployment   | `vite.config.js`, `package.json`, `.github/workflows/ci.yml`                                                                               | `/openflights/` production base path, validation-only CI, and manual `gh-pages` publication                     |
+| Build and deployment   | `vite.config.js`, `package.json`, `.github/workflows/ci.yml`                                                                              | `/openflights/` production base path, validation-only CI, and manual `gh-pages` publication                     |
+
+### Performance
+
+The bundle is intentionally substantial, and the production build currently reports Vite's advisory for a JavaScript chunk larger than 500 kB. This is an accepted tradeoff for an interactive visualization built with React, Three.js, and D3, rather than an optimization target in itself. The implementation emphasizes low-cost runtime behavior through shared buffer geometry, GPU-based picking, bounded route rendering, adaptive pixel ratio, and preservation of long-lived scene resources.
 
 ## Data sources, provenance, and licensing
 
