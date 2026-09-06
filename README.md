@@ -161,7 +161,6 @@ In the GitHub repository UI, Pages should be configured with **Source: Deploy fr
 - Accessibility work has addressed the repository's source-backed keyboard, focus, semantics, mobile-drawer, reduced-motion, non-color, and contrast issues. Broader assistive-technology, forced-colors, zoom/reflow, touch, and cross-browser validation remains outstanding.
 - Automated tests currently cover only deterministic core data parsing, geometry, and position-table behavior; component, browser, accessibility, and end-to-end tests are not configured. No automated type-check or broken-link-check safeguards are configured.
 - Terrain creation is not fully reproducible from repository contents because the source inputs and generation process are not included.
-- A README screenshot with meaningful alternative text is not currently present.
 
 ## AI assistance
 
