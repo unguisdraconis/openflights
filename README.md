@@ -1,8 +1,10 @@
 # OpenFlights 3D Network
 
-OpenFlights 3D Network is an interactive portfolio visualization of a historical airport-route dataset. It is not a live aviation service, flight tracker, schedule, or source of current route intelligence. It is an experiment testing the scalability and performance of D3 based visualizations as a proof-of-concept.
+OpenFlights 3D Network is an interactive portfolio visualization of a historical airport-route dataset. It is not a live aviation service, flight tracker, schedule, or source of current route intelligence.
 
 **Project URL:** [https://unguisdraconis.github.io/openflights/](https://unguisdraconis.github.io/openflights/)
+
+![Interactive OpenFlights historical route network shown as a 3D globe with network controls and selected route connections.](docs/images/openflights-network-overview.png)
 
 ## Project features
 
