@@ -75,7 +75,10 @@ export function Sidebar({
                 key={n.id}
                 className="result-btn"
                 onClick={(event) => {
-                  if (isDesktopViewport && event.detail === 0) {
+                  if (
+                    isDesktopViewport &&
+                    document.activeElement === event.currentTarget
+                  ) {
                     restoreSearchFocusRef.current = true;
                   }
                   selectNode(n, undefined, true);
@@ -100,7 +103,7 @@ export function Sidebar({
               id="clear-selected-airport"
               className="clear-btn"
               onClick={(event) => {
-                if (event.detail === 0) {
+                if (document.activeElement === event.currentTarget) {
                   restoreSearchFocusRef.current = true;
                 }
                 clearSelection();
