@@ -72,6 +72,8 @@ export function GlobeScene({
       lastFrame = performance.now(),
       frameSamples = [],
       currentView = "globe";
+    let focusRaf = 0;
+    let currentSelectedNode = selectedRef.current;
 
     const initialOptions = optionsRef.current;
     let palette = themeFor(initialOptions.theme);
@@ -139,12 +141,19 @@ export function GlobeScene({
       onClear: (...args) => callbacksRef.current.onClear(...args),
     });
 
+    const cancelFocusFlight = () => {
+      if (!focusRaf) return;
+      cancelAnimationFrame(focusRaf);
+      focusRaf = 0;
+    };
     const resetCamera = (view = currentView) => {
+      cancelFocusFlight();
       controls.target.set(0, 0, 0);
       camera.position.set(0, 0.3, view === "globe" ? 3.55 : 4.2);
       controls.update();
     };
     const focusNode = (node) => {
+      cancelFocusFlight();
       const v = positions.read(currentView, node.index, new THREE.Vector3());
       if (currentView === "globe") {
         const end = v.clone().normalize().multiplyScalar(2.35);
@@ -159,6 +168,10 @@ export function GlobeScene({
           t0 = performance.now(),
           dur = 650;
         const fly = (now) => {
+          if (disposed) {
+            focusRaf = 0;
+            return;
+          }
           const t = Math.min(1, (now - t0) / dur),
             q = 1 - Math.pow(1 - t, 3);
           camera.position.lerpVectors(start, end, q);
@@ -168,9 +181,10 @@ export function GlobeScene({
             q,
           );
           controls.update();
-          if (t < 1) requestAnimationFrame(fly);
+          if (t < 1) focusRaf = requestAnimationFrame(fly);
+          else focusRaf = 0;
         };
-        requestAnimationFrame(fly);
+        focusRaf = requestAnimationFrame(fly);
       } else {
         controls.target.copy(v);
         camera.position.set(v.x, v.y, v.z + 2.4);
@@ -198,7 +212,11 @@ export function GlobeScene({
     };
 
     const update = (opts, selectedNode) => {
-      currentView = opts.view;
+      const nextView = opts.view;
+      const selectionCleared = currentSelectedNode && !selectedNode;
+      if (nextView !== currentView || selectionCleared) cancelFocusFlight();
+      currentView = nextView;
+      currentSelectedNode = selectedNode;
       palette = themeFor(opts.theme);
       applyTheme();
       syncAutoRotation(opts);
@@ -269,6 +287,7 @@ export function GlobeScene({
     return () => {
       disposed = true;
       cancelAnimationFrame(raf);
+      cancelFocusFlight();
       ro.disconnect();
       reducedMotionQuery.removeEventListener("change", onReducedMotionChange);
       window.removeEventListener("keydown", key);
