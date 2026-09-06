@@ -8,7 +8,7 @@
   --control-border: #656d7c;
   --text-h: #f3f4f6;
   --text: #aeb4c0;
-  --muted: #868e9b;
+  --muted: #a3abb7;
   --accent: #56b4e9;
   --accent-strong: #0072b2;
   --accent-bg: rgba(86, 180, 233, 0.14);
@@ -54,7 +54,7 @@
   --control-border: #7d8793;
   --text-h: #14171c;
   --text: #3f4753;
-  --muted: #6b7482;
+  --muted: #58616e;
   --accent: #0072b2;
   --accent-strong: #005b8f;
   --accent-bg: rgba(0, 114, 178, 0.1);
@@ -309,6 +309,10 @@ h1 {
   border-radius: 9px;
   background: var(--bg-input);
   padding: 0 36px 0 12px;
+}
+.search::placeholder {
+  color: var(--muted);
+  opacity: 1;
 }
 .search-icon {
   position: absolute;
